@@ -1,0 +1,18 @@
+[project]
+name = "cholla_api"
+version = "0.0.1"
+authors = [
+  { name="Diego Garza", email="digarza@ucsc.edu" },
+]
+description = "A small example package to use on Cholla"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/astrodiegog/cholla_api"
+Issues = "https://github.com/astrodiegog/cholla_api/issues"
