@@ -1,5 +1,5 @@
 import numpy as np
-from ChollaSnap import ChollaSnap
+from cholla_api.snap.ChollaSnap import ChollaSnap
 
 class ChollaRun:
 
