@@ -3,13 +3,14 @@ from cholla_api.snap.ChollaSnap import ChollaSnap
 
 class ChollaRun:
 
-    def __init__(self, basePath, tot_nSnap, namebase, nBoxes, data_dir='/data', img_dir='/imgs'):
+    def __init__(self, basePath, tot_nSnap, namebase, nBoxes, data_dir='/data', img_dir='/imgs', test_name=""):
         self.basePath = basePath
         self.dataPath = self.basePath + data_dir
         self.imgsPath = self.basePath + img_dir
         self.totnSnap = tot_nSnap
         self.namebase = namebase
         self.nBoxes = nBoxes
+        self.test_name = test_name
 
     def createSnap(self, nSnap, keys=[], load_data=True, snap_head=False):
         if nSnap > self.totnSnap:
