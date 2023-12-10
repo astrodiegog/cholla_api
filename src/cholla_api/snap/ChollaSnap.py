@@ -16,6 +16,23 @@ class ChollaSnap:
         self.dims_loc = None
         self.data = {}
 
+    def key_datacheck(self, key, key_str=None, raise_keyerr=False):
+        '''
+        check whether a key is inside the data
+        '''
+        if key_str is None:
+            key_str = key
+        
+        try:
+            self.data[key]
+        except KeyError:
+            err_message = '-- Error --\n'
+            err_message += f'Unable to find {key_str} \n'
+            err_message += f'Missing {key} in snapshot data \n'
+            print(err_message)
+            if raise_keyerr:
+                raise
+        
     def load_data(self, keys, set_head=True):
         """
         load all data
@@ -28,18 +45,32 @@ class ChollaSnap:
             if nbox == 0:
                 if set_head:
                     self.head = dict(fObj.attrs)
-                    self.dims = self.head['dims']
+                self.dims = self.head['dims']
+                
+                # where there are more cells than boxes
+                cells_over_nbox_mask = (self.dims / self.nBoxes)>1 
+                test_modulos = self.dims[cells_over_nbox_mask]
+                # if cells divide evenly into nBoxes, can save dims_loc ass attr
+                always_set_locals = False
+                for test_modulo in test_modulos:
+                    always_set_locals = (test_modulo % self.nBoxes)>0
+
+                if not always_set_locals:
                     self.dims_loc = self.head['dims_local']
-                else:
-                    self.dims = self.head['dims']
-                    self.dims_loc = self.head['dims_local']
+                
+            
+            if self.dims_loc is None:
+                curr_dimsloc = fObj.attrs['dims_local']
+            else:
+                curr_dimsloc = self.dims_loc
             curr_offset = fObj.attrs['offset']
+            
             keyStart_x, keyStart_y, keyStart_z = curr_offset
-            keyEnd_x, keyEnd_y, keyEnd_z = curr_offset + self.dims_loc
+            keyEnd_x, keyEnd_y, keyEnd_z = curr_offset + curr_dimsloc
             for key in self.keys:
                 if nbox == 0:
                     self.data[key] = np.zeros(self.dims)
-                curr_keydata = np.array(fObj[key]).reshape(self.dims_loc)
+                curr_keydata = np.array(fObj[key]).reshape(curr_dimsloc)
                 self.data[key][keyStart_x:keyEnd_x, keyStart_y:keyEnd_y, keyStart_z:keyEnd_z] = curr_keydata
 
             fObj.close()

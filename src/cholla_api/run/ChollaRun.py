@@ -1,4 +1,5 @@
 import numpy as np
+import os
 from cholla_api.snap.ChollaSnap import ChollaSnap
 
 class ChollaRun:
@@ -11,6 +12,19 @@ class ChollaRun:
         self.namebase = namebase
         self.nBoxes = nBoxes
         self.test_name = test_name
+        
+        self.check_totnsnap()
+        
+    def check_totnsnap(self):
+        num_datafiles = len(os.listdir(self.dataPath))
+        
+        if (num_datafiles != self.totnSnap * self.nBoxes):
+            err_message = f'''
+            The given number of snapshots ({self.totnSnap:.0f}) and number of boxes ({self.nBoxes:.0f})
+            \t does not match the number of files in data directory ({num_datafiles:.0f})
+            '''
+            
+            raise Exception(err_message)
 
     def createSnap(self, nSnap, keys=[], load_data=True, snap_head=False):
         if nSnap > self.totnSnap:

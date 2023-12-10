@@ -7,6 +7,9 @@ Any formatting details that could be used when making plots
 # Colorbar number formatting functions
 #########
 
+def reg0_fmt(x, pos):
+    return f'{x:.0f}'
+
 def reg1_fmt(x, pos):
     return f'{x:.1f}'
 
