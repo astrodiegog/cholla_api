@@ -31,7 +31,7 @@ The plotting format `plt_fmt` is a dictionary that handles the plotting for a sp
     
 The idea is that if you see something you'd like to change after making a plot of a specific test sample, then you create a new key for `plt_fmt` with different values for whatever run or values you're plotting. Within \__init_\_, you can place a default value.
 
-For example, if I wanted to change the title fontsize in density for the 1D version running the sod test, I would add "title_fs" as a key to `plt_fmt`, assign specific font sizes to "sod" within the `density_format` function, and define a default value in \__init_\_.
+For example, if I wanted to change the title fontsize in density for the 1D version running the sod test, I would add "title_fs" as a key to `plt_fmt`, assign specific font sizes to "sod" within the `density_format` function, and define a default value in \___init__\_.
 
 In the `Cholla1DViz`, `plt_fmt` holds
 - value_key: the key used to access a snapshot's data
@@ -59,6 +59,7 @@ This is supposed to hold any formatting helper functions. Currently holds functi
 ## Add more visualizations
 
 To add another value to visualize in this framework (like internal energy) that is within the data of the snapshot...
+
 0. Goal is to use `plot_value`, so only special thing is to specify plotting formatting.
 1. Figure out some plotting formatting. Add a function for `Cholla1DVizFmt`, `Cholla2DVizFmt`, and `Cholla3DVizFmt` that specifies the formatting. Check `plot_value` function to see the requirements to use `plot_value`.
 2. Add a function in `ChollaxDViz` that sets this new plotting function's format. Within function, pass values onto `plot_value`.
