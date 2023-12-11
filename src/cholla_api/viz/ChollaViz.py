@@ -10,9 +10,7 @@ when catching the keyerror for each value, should I be raising
 
 import numpy as np
 
-
 from cholla_api.viz.ChollaxDViz import ChollaxDViz
-
 
 
 class ChollaViz:
