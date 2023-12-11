@@ -8,21 +8,28 @@ when catching the keyerror for each value, should I be raising
     KeyError or just returning a None?
 '''
 
-from cholla_api.viz.Cholla1DViz import Cholla1DViz
-from cholla_api.viz.Cholla2DViz import Cholla2DViz
+import numpy as np
+
+
+from cholla_api.viz.ChollaxDViz import ChollaxDViz
+
+
 
 class ChollaViz:
     
-    def __init__(self, chollasnap, num_D, test_name="", plt_kwargs={"show": True, "save": False}):
+    def __init__(self, chollasnap, test_name="", plt_kwargs={"show": True, "save": False}):
         self.ch_snap = chollasnap
         self.test_name = test_name
-        self.num_D = num_D
         self.plt_kwargs = plt_kwargs
+        self.num_D = int(np.sum(self.ch_snap.head['dims'] != 1.))
+        
         
         if self.num_D == 1:
-            self.chollaxDViz = Cholla1DViz(self.ch_snap, test_name)
+            self.chollaxDViz = ChollaxDViz(self.ch_snap, num_dims=self.num_D, test_name=self.test_name)
+            
         if self.num_D == 2:
-            self.chollaxDViz = Cholla2DViz(self.ch_snap, test_name)
+            self.chollaxDViz = ChollaxDViz(self.ch_snap, num_dims=self.num_D, test_name=self.test_name)
+            
         if self.num_D == 3:
             self.chollaxDViz = Cholla3DViz(self.ch_snap, test_name)
     
@@ -61,6 +68,7 @@ class ChollaViz:
             plt_kwargs = self.plt_kwargs
         
         self.chollaxDViz.pressure(plt_kwargs)
+
     
     def density(self, plt_kwargs=None):
             

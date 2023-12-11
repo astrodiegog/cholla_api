@@ -1,7 +1,5 @@
 '''
-Plotting for a 2D Cholla Simulation run
-
-!! Explanation in Cholla2DViz !!
+Plotting for a 1D Cholla Simulation run
 '''
 
 import numpy as np
@@ -84,19 +82,23 @@ def plot_value_compare_1D(data1, head1, data2, head2, plt_fmt, plt_kwargs):
 
 
 
-class Cholla1DViz:
+class Cholla1DVizFmt:
     '''
     Assumption that the 1 dimension used in the simulation is x 
         results in using the plotting data as data[:,0,0]
     '''
     
-    def __init__(self, chollasnap, test_name=""):
-        self.ch_snap = chollasnap
+
+    def __init__(self, test_name=""):
+
         self.test_name = test_name
         
         self.def_yval_fmt = reg1_fmt
         self.def_figsize = (10,8)
         self.def_compare_figsize = (12,6)
+        
+        self.plot_value = plot_value_1D
+        self.plot_value_compare = plot_value_compare_1D
         
 
     def pressure_fmt(self, compare=False):
@@ -104,93 +106,94 @@ class Cholla1DViz:
         set the formatting for the pressure plotting function / plot_pressure_2D
         '''
         plt_fmt = {}
-        
-        if compare:
-            plt_fmt["y_label"] = "Pressure"
-            plt_fmt["fig_size"] = self.def_compare_figsize
-        else:
-            plt_fmt["title"] = "Pressure"
-            plt_fmt["fig_size"] = self.def_figsize
         plt_fmt["value_key"] = "pressure"
         
+        # figsize & (y label OR title)
+        figsize=self.def_figsize
+        if compare:
+            plt_fmt["y_label"] = "Pressure"
+            figsize = self.def_compare_figsize
+        else:
+            plt_fmt["title"] = "Pressure"
+        plt_fmt["fig_size"] = figsize
+        
+        # y value
+        yval_fmt = self.def_yval_fmt
         if (self.test_name == "123"):
             yval_fmt = reg5_fmt
-        else:
-            yval_fmt = self.def_yval_fmt
         plt_fmt["yval_fmt"] = yval_fmt
         
         return plt_fmt
     
     def density_fmt(self, compare=False):
         plt_fmt = {}
-        
-        if compare:
-            plt_fmt["y_label"] = "Density"
-            plt_fmt["fig_size"] = self.def_compare_figsize
-        else:
-            plt_fmt["title"] = "Density"
-            plt_fmt["fig_size"] = self.def_figsize
         plt_fmt["value_key"] = "density"
         
+        # figsize & (y label OR title)
+        figsize = self.def_figsize
+        if compare:
+            plt_fmt["y_label"] = "Density"
+            figsize = self.def_compare_figsize
+        else:
+            plt_fmt["title"] = "Density"
+        plt_fmt["fig_size"] = figsize
+        
+        # y value
+        yval_fmt = self.def_yval_fmt
         if (self.test_name == "123"):
             yval_fmt = reg3_fmt
         elif (self.test_name == "constant"):
             yval_fmt = reg0_fmt
-        else:
-            yval_fmt = self.def_yval_fmt
         plt_fmt["yval_fmt"] = yval_fmt
         
         return plt_fmt
     
     def vel_fmt(self, compare=False):
         plt_fmt = {}
-        
-        if compare:
-            plt_fmt["y_label"] = "Velocity"
-            plt_fmt["fig_size"] = self.def_compare_figsize
-        else:
-            plt_fmt["title"] = "Velocity"
-            plt_fmt["fig_size"] = self.def_figsize
         plt_fmt["value_key"] = "vel_mag"
         
+        # figsize & (y label OR title)
+        figsize=self.def_figsize
+        if compare:
+            plt_fmt["y_label"] = "Velocity"
+            figsize = self.def_compare_figsize
+        else:
+            plt_fmt["title"] = "Velocity"
+        plt_fmt["fig_size"] = figsize
+        
+        # y value
+        yval_fmt = self.def_yval_fmt
         if (self.test_name == "123"):
             yval_fmt = reg3_fmt
-        else:
-            yval_fmt = self.def_yval_fmt
         plt_fmt["yval_fmt"] = yval_fmt
         
         return plt_fmt
     
-    
-    def pressure(self, plt_kwargs):
-        plt_fmt = self.pressure_fmt()
-        plot_value_1D(self.ch_snap.data, self.ch_snap.head, plt_fmt, plt_kwargs)
-    
-    def density(self, plt_kwargs):
-        plt_fmt = self.density_fmt()
-        plot_value_1D(self.ch_snap.data, self.ch_snap.head, plt_fmt, plt_kwargs)
-        
-    def velocity(self, plt_kwargs):
-        plt_fmt = self.vel_fmt()
-        plot_value_1D(self.ch_snap.data, self.ch_snap.head, plt_fmt, plt_kwargs)
-    
-    
-    def density_compare(self, ch_snap2, plt_kwargs):
+    def plt_value_fmt(self, value_key):
         '''
-        comparing density at different snapshot times
         '''
-        plt_fmt = self.density_fmt(compare=True)
-        plot_value_compare_1D(self.ch_snap.data, self.ch_snap.head, 
-                              ch_snap2.data, ch_snap2.head, plt_fmt, plt_kwargs)
-    
-    def pressure_compare(self, ch_snap2, plt_kwargs):
-        plt_fmt = self.pressure_fmt(compare=True)
-        plot_value_compare_1D(self.ch_snap.data, self.ch_snap.head, 
-                              ch_snap2.data, ch_snap2.head, plt_fmt, plt_kwargs)
-    
-    def velocity_compare(self, ch_snap2, plt_kwargs):
-        plt_fmt = self.vel_fmt(compare=True)
+        plt_fmt={}
         
-        plot_value_compare_1D(self.ch_snap.data, self.ch_snap.head, 
-                              ch_snap2.data, ch_snap2.head, plt_fmt, plt_kwargs)
+        if (value_key == "pressure"):
+            plt_fmt = self.pressure_fmt()
+        elif (value_key == "density"):
+            plt_fmt = self.density_fmt()
+        elif (value_key == "velocity"):
+            plt_fmt = self.velocity_fmt()
         
+        return plt_fmt
+    
+    
+    def plt_value_compare_fmt(self, value_key):
+        plt_fmt={}
+        
+        if (value_key == "pressure"):
+            plt_fmt = self.pressure_fmt(compare=True)
+        elif (value_key == "density"):
+            plt_fmt = self.density_fmt(compare=True)
+        elif (value_key == "velocity"):
+            plt_fmt = self.velocity_fmt(compare=True)
+        
+        return plt_fmt
+    
+    
