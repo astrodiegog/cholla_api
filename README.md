@@ -22,6 +22,16 @@ where we use the `--user` flag to pip install the package onto your home directo
 
 After importing `cholla_api` in a python script, we can create a `ChollaSnap` instance that will help in studying a snapshot. To study an entire simulation run, we can also use the `ChollaRun` class. The `ChollaViz` directory holds many helper plotting functions.
 
+## Distribution
+
+The `dist` files are created when building using PyPA [build](https://github.com/pypa/build).
+
+`tar.gz` serves as the source distribution while `.whl` is a built distribution. 
+
+The source distribution holds metadata and source files to be used by pip when installing, and serves as a hard archive of the package.
+
+The built distribution includes the compiled code, and is used for much quicker installation.
+
 ## Other Info
 
 Currently, this package works with Cholla simulation runs that use `TYPE=hydro`.
