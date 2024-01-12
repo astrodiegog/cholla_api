@@ -1,5 +1,5 @@
 '''
-Plotting for a 2D Cholla Simulation run
+Plotting for a 3D Cholla Simulation run
 '''
 
 import numpy as np
@@ -11,33 +11,37 @@ import matplotlib.ticker as ticker
 from cholla_api.viz.viz_format import *
 
 
-
-def plot_value_2D(data, head, plt_fmt, plt_kwargs):
+def def_reduce_fn(data):
     '''
-    generic plotting 2D plotting function given
+    default dimension reduction function. y-midplane slice
+    '''
+    y_mid = int(np.shape(data)[1]/2)
+    return data[:,y_mid,:]
+
+def plot_value_2D(data, head, plt_fmt, plt_kwargs, red_fn=def_reduce_fn):
+    '''
+    generic 2D plotting function given
     params:
         data (np array): data from cholla snapshot
         head (dictionary): header from cholla snapshot
         plt_fmt (dictionary): handles specific value formats for different tests
         plt_kwargs (dictionary): handles plot outputs (showing, saving)
-    '''    
+        red_fn (function): a dimension reduction function that brings a 3D array to 2D
+    '''
     val_key = plt_fmt["value_key"]
     title_str = plt_fmt["title"]
     clb_fmt = plt_fmt["value_fmt"]
     figsize = plt_fmt["fig_size"]
     
-    value = data[val_key][:,:,0].T
+    value = data[val_key][:,:,:].T
+    value = red_fn(value) # projection or slice
     
     time = head["t"][0]
     time_str = f"t = {time:.3f}"
 
     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=figsize)
-    if (plt_fmt.get("value_lims")):
-        vmin, vmax = plt_fmt["value_lims"]
-    else:
-        vmin, vmax = np.min(value), np.max(value)
 
-    im = ax.imshow(value, vmin=vmin, vmax=vmax)
+    im = ax.imshow(value)
     divider = make_axes_locatable(ax)
     cax = divider.append_axes('right', size='5%', pad=0.05)
 
@@ -57,7 +61,7 @@ def plot_value_2D(data, head, plt_fmt, plt_kwargs):
         plt.show()
     plt.close()
 
-def plot_value_compare_2D(data1, head1, data2, head2, plt_fmt, plt_kwargs):
+def plot_value_compare_2D(data1, head1, data2, head2, plt_fmt, plt_kwargs, red_fn=def_reduce_fn):
     '''
     generic 2D plotting comparison function given
     params:
@@ -65,14 +69,15 @@ def plot_value_compare_2D(data1, head1, data2, head2, plt_fmt, plt_kwargs):
         head1/head2 (dictionary): header from cholla snapshot
         plt_fmt (dictionary): handles specific value formats for different tests
         plt_kwargs (dictionary): handles plot outputs (showing, saving)
-    '''
+        red_fn (function): a dimension reduction function that brings a 3D array to 2D
+    ''' 
     val_key = plt_fmt["value_key"]
     title_str = plt_fmt["title"]
     clb_fmt = plt_fmt["value_fmt"]
     figsize = plt_fmt["fig_size"]
     
-    value1 = data1[val_key][:,:,0].T
-    value2 = data2[val_key][:,:,0].T
+    value1 = red_fn(data1[val_key][:,:,:].T)
+    value2 = red_fn(data2[val_key][:,:,:].T)
     values = [value1, value2]
     
     t1 = head1["t"][0]
@@ -84,11 +89,7 @@ def plot_value_compare_2D(data1, head1, data2, head2, plt_fmt, plt_kwargs):
     
     gridspec = {'width_ratios': [1, 1, 0.08]}
     fig, ax = plt.subplots(nrows=1, ncols=3, figsize=figsize, gridspec_kw=gridspec)
-    if (plt_fmt.get("value_lims")):
-        vmin, vmax = plt_fmt["value_lims"]
-    else:
-        vmin, vmax = np.min(values), np.max(values)
-
+    vmin, vmax = np.min(values), np.max(values)    
 
     for i in range(2):
         im = ax[i].imshow(values[i], vmin=vmin, vmax=vmax)
@@ -117,66 +118,12 @@ def plot_value_compare_2D(data1, head1, data2, head2, plt_fmt, plt_kwargs):
     if plt_kwargs.get("show"):
         plt.show()
     plt.close()
+
+
     
-    
-def def_reduce_fn(data):
+class Cholla3DVizFmt:
     '''
-    default dimension reduction function. median along axis=1 for a 2D data
-    '''
-    return np.median(data, axis=1)
-
-
-def plot_value_2D_1D(data, head, plt_fmt, plt_kwargs, red_fn=def_reduce_fn):
-    '''
-    same as plot_value_2D, but accepts a dimension reduction function
-        for example, median along x, sum along y
-        default would probably be just taking the median
-    '''
-
-    val_key = plt_fmt["value_key"]
-    title_str = plt_fmt["title"]
-    yval_fmt = plt_fmt["value_fmt"]    
-    figsize = plt_fmt["fig_size"]
-
-    value = data[val_key][:,:,0].T
-    value_reduced = red_fn(value) # make sure default_reduce works
-
-    time = head["t"][0]
-    time_str = f"t = {time:.3f}"
-
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=figsize)
-    
-    im = ax.plot(value_reduced)
-
-    ax.yaxis.set_major_formatter(ticker.FuncFormatter(yval_fmt))
-
-    ax.set_xlim(0, head["dims"][0])
-    if (plt_fmt.get("value_lims")):
-        vmin, vmax = plt_fmt["value_lims"]
-    else:
-        vmin, vmax = np.min(value), np.max(value)
-    ax.set_ylim(vmin, vmax)
-
-    ax.set_xlabel("X (cells)")
-    if plt_fmt.get("x_label"):
-        ax.set_xlabel(plt_fmt["x_label"])
-
-    ax.set_ylabel(title_str)
-    ax.set_title(title_str)
-    plt.tight_layout()
-    if plt_kwargs.get("imgfout"):
-        plt.savefig(plt_kwargs["imgfout"])
-    if plt_kwargs.get("show"):
-        plt.show()
-    plt.close()
-
-
-
-
-class Cholla2DVizFmt:
-    '''
-    Assumption that the 2 dimensions used in the simulation are x and y
-        results in using the plotting data as data[:,:,0]
+    Cholla visualization class for a 3D simulation run
     '''
     
     def __init__(self, test_name="", reduce_dim_fn=None):
@@ -194,12 +141,12 @@ class Cholla2DVizFmt:
         
         self.plot_value = plot_value_2D
         self.plot_value_compare = plot_value_compare_2D
-        self.plot_value_reduce = plot_value_2D_1D
+        self.plot_value_reduce = plot_value_2D # need to reduce either way
         
 
     def pressure_fmt(self, compare=False):
         '''
-        set the plotting function formatting for pressure
+        set the formatting for the pressure plotting function / plot_pressure_2D
         '''
         plt_fmt = {}
         plt_fmt["value_key"] = "pressure"
@@ -220,26 +167,11 @@ class Cholla2DVizFmt:
         elif (self.test_name == "sound_wave"):
             val_fmt = reg5_fmt
         plt_fmt["value_fmt"] = val_fmt
-
-        # value limits
-        val_lims = (0,1.)
-        if (self.test_name == "implosion"):
-            val_lims = (0.7, 1.3)
-        elif (self.test_name == "KH_disc"):
-            val_lims = (1.8, 2.8)
-        elif (self.test_name == "KH_resind"):
-            val_lims = (1.5, 3.5)
-        elif (self.test_name == "Rayleigh_Taylor"):
-            val_lims = (0.4, 1.4)
-        plt_fmt["val_lims"] = val_lims
-
+        
         return plt_fmt
     
     
     def density_fmt(self, compare=False):
-        '''
-        set the plotting function formattig for density
-        '''
         plt_fmt = {}
         plt_fmt["value_key"] = "density"
         plt_fmt["title"] = "Density"
@@ -260,25 +192,10 @@ class Cholla2DVizFmt:
             value_fmt = reg5_fmt
         plt_fmt["value_fmt"] = value_fmt
         
-        # value limits
-        val_lims = (0,1.)
-        if (self.test_name == "implosion"):
-            val_lims = (0.4, 1.4)
-        elif (self.test_name == "KH_disc"):
-            val_lims = (1.0, 2.2)
-        elif (self.test_name == "KH_resind"):
-            val_lims = (0, 100.)
-        elif (self.test_name == "Rayleigh_Taylor"):
-            val_lims = (0., 2.2)
-        plt_fmt["val_lims"] = val_lims
-
         return plt_fmt
     
     
     def velx_fmt(self, compare=False):
-        '''
-        set the plotting function formattig for x velocity
-        '''
         plt_fmt = {}
         plt_fmt["value_key"] = "vel_x"
         plt_fmt["title"] = "Velocity (x)"
@@ -299,18 +216,9 @@ class Cholla2DVizFmt:
             value_fmt = scinot2_fmt
         plt_fmt["value_fmt"] = value_fmt
         
-        # value limits
-        val_lims = (0,0.5)
-        if (self.test_name == "sound_wave"):
-            val_lims = (0., 1.)
-        plt_fmt["val_lims"] = val_lims
-
         return plt_fmt
     
     def vely_fmt(self, compare=False):
-        '''
-        set the plotting function formatting for y velocity
-        '''
         plt_fmt = {}
         plt_fmt["value_key"] = "vel_y"
         plt_fmt["title"] = "Velocity (y)"
@@ -329,18 +237,9 @@ class Cholla2DVizFmt:
             value_fmt = scinot2_fmt
         plt_fmt["value_fmt"] = value_fmt
         
-        # value limits
-        val_lims = (0,0.5)
-        if (self.test_name == "sound_wave"):
-            val_lims = (0., 1.)
-        plt_fmt["val_lims"] = val_lims
-
         return plt_fmt
     
     def vel_fmt(self, compare=False):
-        '''
-        set the plotting function formatting for velocity
-        '''
         plt_fmt = {}
         plt_fmt["value_key"] = "vel_mag"
         plt_fmt["title"] = "Velocity"
@@ -361,12 +260,6 @@ class Cholla2DVizFmt:
             value_fmt = scinot2_fmt
         plt_fmt["value_fmt"] = value_fmt
         
-        # value limits
-        val_lims = (0,0.5)
-        if (self.test_name == "sound_wave"):
-            val_lims = (0., 1.)
-        plt_fmt["val_lims"] = val_lims
-
         return plt_fmt
 
     

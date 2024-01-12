@@ -1,26 +1,33 @@
 import numpy as np
 import os
+import glob
 import pathlib
 
 from cholla_api.snap.ChollaSnap import ChollaSnap
 from cholla_api.viz.ChollaViz import ChollaViz
-
+from cholla_api.viz.ChollaVizCompare import ChollaVizCompare
 
 
 class ChollaRun:
+    '''
+    Class that holds important information to manipulate and study a Cholla simulation run
+    '''
 
-    def __init__(self, basePath, tot_nSnap, namebase, nBoxes, data_dir='/data', img_dir='/imgs', test_name=""):
+    def __init__(self, basePath, namebase='h5', data_dir='/data', img_dir='/imgs', test_name=""):
         self.basePath = basePath
         self.dataPath = self.basePath + data_dir
         self.imgsPath = self.basePath + img_dir
-        self.totnSnap = tot_nSnap
         self.namebase = namebase
-        self.nBoxes = nBoxes
+        self.totnSnap = len(glob.glob1(self.dataPath, f"*.{self.namebase}.0"))
+        self.nBoxes = len(glob.glob1(self.dataPath, f"0.{self.namebase}.*"))
         self.test_name = test_name
         
         self.check_totnsnap()
         
     def check_totnsnap(self):
+        '''
+        raise exception if the total number of snapshots is incorrect
+        '''
         num_datafiles = len(os.listdir(self.dataPath))
         
         if (num_datafiles != self.totnSnap * self.nBoxes):
@@ -32,6 +39,14 @@ class ChollaRun:
             raise Exception(err_message)
 
     def createSnap(self, nSnap, keys=[], load_data=True, snap_head=False):
+        '''
+        creates a ChollaSnap instance
+        params:
+            nSnap (int): the snapshot number to load
+            keys (list): list of keys to load from the dataset
+            load_data (bool): whether to load the key data or not
+            snap_head (bool): whether to keep the sim head with snapshot, or pass onto ChollaRun class
+        '''
         if nSnap > self.totnSnap:
             print('Invalid snap number')
             return -1
@@ -42,6 +57,44 @@ class ChollaRun:
             self.head = dict(ch_snap.head)
             ch_snap.head = None
         return ch_snap
+
+    def beg_vs_fin(self, keys, imgftype='png', test_name="", valuecalcs=None, plots_type=None, plt_kwargs=None):
+        '''
+        make plot comparing initial vs final conditions
+        '''
+        if plots_type is None:
+            plots_type = ["density", "velocity", "pressure"]
+        if plt_kwargs is None:
+            plt_kwargs = {}
+
+        ch_snap1 = self.createSnap(0, keys=keys, load_data=True, snap_head=True)
+        ch_snap2 = self.createSnap(self.totnSnap-1, keys=keys, load_data=True, snap_head=True)
+
+        if valuecalcs is not None:
+            ch_snap1.calc_vals(valuecalcs)
+            ch_snap2.calc_vals(valuecalcs)
+        
+        ch_comp = ChollaVizCompare(ch_snap1, ch_snap2, test_name=test_name, plt_kwargs=plt_kwargs)
+
+        if ("density" in plots_type):
+            if plt_kwargs.get("save"):
+                imgfout = f"{self.imgsPath}/density_ic.{imgftype}"
+                plt_kwargs["imgfout"] = imgfout
+            ch_comp.density(plt_kwargs)
+         
+        if ("pressure" in plots_type):
+            if plt_kwargs.get("save"):
+                imgfout = f"{self.imgsPath}/pressure_ic.{imgftype}"
+                plt_kwargs["imgfout"] = imgfout
+            ch_comp.pressure(plt_kwargs)
+
+        if ("velocity" in plots_type):
+            if plt_kwargs.get("save"):
+                imgfout = f"{self.imgsPath}/velocity_ic.{imgftype}"
+                plt_kwargs["imgfout"] = imgfout
+            ch_comp.velocity(plt_kwargs)
+
+
 
     def make_movie(self, keys, imgfbase, imgftype='png', test_name="", movie_nsnaps=None, valuecalcs=None, movie_plots=None, plt_kwargs=None):
         '''
@@ -106,21 +159,5 @@ class ChollaRun:
                     # done with progress bar stuff
                     progress_ind_curr = -1
                 
-                
-        
-        
-    def compare_plot(self, plot_fn, keys, nsnap1, nsnap2, imgfbase, imgftype='png', valuecalcs=None, plt_kwargs=None):
-        '''
-        need to re-design with ChollaViz module
-        '''
-        snap1 = ChollaSnap(nsnap1, keys=keys, load_data=True, snap_head=False)
-        snap2 = ChollaSnap(nsnap2, keys=keys, load_data=True, snap_head=False)
-        if valuecalcs is not None:
-            snap1.calc_vals(valuecalcs)
-            snap2.calc_vals(valuecalcs)
-        if plt_kwargs.get('save'):
-            imgfout = f"{self.imgsPath}/{imgfbase}_{nsnap1:.0d}_{nsnap2:.0d}.{imgftype}"
-            plt_kwargs['imgfout'] = imgfout
-        plot_fn(snap1.data, snap1.head, snap2.data, snap2.head, plt_kwargs)
 
 

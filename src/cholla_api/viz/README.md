@@ -25,9 +25,9 @@ The ability to compare one of these values within the same simulation run is als
 
 ## Cholla1DViz, Cholla2DViz, Cholla3DViz
 
-`Cholla2DViz` and `Cholla1DViz` - sub classes created when instantiating `ChollaXDViz`. Each of these have two primary plotting functions: `plot_value` and `plot_value_compare`. These two take in some data, head, plotting format, and plotting arguments.
+`Cholla3DViz`, `Cholla2DViz`, and `Cholla1DViz` - sub classes created when instantiating `ChollaXDViz`. Each of these have two primary plotting functions: `plot_value` and `plot_value_compare`. These two take in some data, head, plotting format, and plotting arguments.
 
-The plotting format `plt_fmt` is a dictionary that handles the plotting for a specific value and test sample. The general idea is that each simulation run AND each plotting value is going to have different formats. This is meant to be set within its own plotting formatting function that can be saved for tests (`plot_pressure_format` function may be different compared to `plot_density_format` depending on the test sample).
+The plotting format `plt_fmt` is a dictionary that handles the plotting for a specific value and test sample. Each simulation run AND each plotting value is going to have different formats. This is meant to be set within its own plotting formatting function that can be saved for tests (`plot_pressure_format` function may be different compared to `plot_density_format` depending on the test sample).
     
 The idea is that if you see something you'd like to change after making a plot of a specific test sample, then you create a new key for `plt_fmt` with different values for whatever run or values you're plotting. Within \__init_\_, you can place a default value.
 
@@ -38,17 +38,19 @@ In the `Cholla1DViz`, `plt_fmt` holds
 - y_label OR title: the label on the y-axis OR the title on the plots
 - fig_size: the figure size
 - yval_fmt: the format that the y value is shown in
+- yval_lims: limits of the y value
 
 In the `Cholla2DViz`, `plt_fmt` holds
 - value_key: the key used to access a snapshot's data
-- colorbar_fmt: the format on the colorbar
+- value_fmt: the format on the colorbar or y-axis
+- value_lims: limits on the value
 - fig_size: the figure size
 - title: the title name
 
 In general, the plotting arguments (`plt_kwargs`) handles what happens with the plot after it has been plotted. Currently, it handles whether the user would like to 1) show the plot and 2) save the plot.
 
 
-The goal of `ChollaxDViz`, compared to these subclasses, is to handle different dimensions. So `Cholla2DViz` _could_ be used standalone, just need to be careful.
+The goal of `ChollaxDViz`, compared to these subclasses, is to handle different dimensions. So `Cholla2DViz` _could_ be used standalone, just need to be careful. `ChollaViz` wraps around and uses `ChollaxDViz` to be flexible about dimensions and provide less hassle to the user.
 
 
 ## viz_format
@@ -59,6 +61,7 @@ This is supposed to hold any formatting helper functions. Currently holds functi
 ## Add more visualizations
 
 To add another value to visualize in this framework (like internal energy) that is within the data of the snapshot...
+
 
 0. Goal is to use `plot_value`, so only special thing is to specify plotting formatting.
 1. Figure out some plotting formatting. Add a function for `Cholla1DVizFmt`, `Cholla2DVizFmt`, and `Cholla3DVizFmt` that specifies the formatting. Check `plot_value` function to see the requirements to use `plot_value`.
