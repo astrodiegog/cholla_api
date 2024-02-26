@@ -222,16 +222,16 @@ class Cholla2DVizFmt:
         plt_fmt["value_fmt"] = val_fmt
 
         # value limits
-        val_lims = (0,1.)
+        val_lims = (1.5, 3.)
         if (self.test_name == "implosion"):
-            val_lims = (0.7, 1.3)
-        elif (self.test_name == "KH_disc"):
-            val_lims = (1.8, 2.8)
-        elif (self.test_name == "KH_resind"):
-            val_lims = (1.5, 3.5)
+            val_lims = (0.5, 1.5)
+        elif (self.test_name == "sod"):
+            val_lims = (0., 1.)
         elif (self.test_name == "Rayleigh_Taylor"):
-            val_lims = (0.4, 1.4)
-        plt_fmt["val_lims"] = val_lims
+            val_lims = (0.5, 1.0)
+        elif (self.test_name == "sound_wave"):
+            val_lims = (0.5999,0.6001)
+        plt_fmt["value_lims"] = val_lims
 
         return plt_fmt
     
@@ -261,16 +261,16 @@ class Cholla2DVizFmt:
         plt_fmt["value_fmt"] = value_fmt
         
         # value limits
-        val_lims = (0,1.)
-        if (self.test_name == "implosion"):
-            val_lims = (0.4, 1.4)
-        elif (self.test_name == "KH_disc"):
-            val_lims = (1.0, 2.2)
+        val_lims = (0.,1.)
+        if (self.test_name == "KH_disc"):
+            val_lims = (1., 2.)
         elif (self.test_name == "KH_resind"):
-            val_lims = (0, 100.)
+            val_lims = (0., 100.)
         elif (self.test_name == "Rayleigh_Taylor"):
-            val_lims = (0., 2.2)
-        plt_fmt["val_lims"] = val_lims
+            val_lims = (1., 2.)
+        elif (self.test_name == "sound_wave"):
+            val_lims = (0.9999, 1.0001)
+        plt_fmt["value_lims"] = val_lims
 
         return plt_fmt
     
@@ -293,17 +293,23 @@ class Cholla2DVizFmt:
         
         # colorbar/y-value
         value_fmt = self.def_val_fmt
-        if (self.test_name == "sod"):
-            value_fmt = scinot2_fmt
-        elif (self.test_name == "sound_wave"):
+        if (self.test_name == "sound_wave"):
             value_fmt = scinot2_fmt
         plt_fmt["value_fmt"] = value_fmt
         
         # value limits
-        val_lims = (0,0.5)
-        if (self.test_name == "sound_wave"):
-            val_lims = (0., 1.)
-        plt_fmt["val_lims"] = val_lims
+        val_lims = (0.,1.)
+        if (self.test_name == "implosion"):
+            val_lims = (-0.15, 0.15)
+        elif (self.test_name == "KH_disc"):
+            val_lims = (-1.,1.)
+        elif (self.test_name == "KH_resind"):
+            val_lims = (-0.5, 0.5)
+        elif (self.test_name == "Rayleigh_Taylor"):
+            val_lims = (-0.002, 0.002)
+        elif (self.test_name == "sound_wave"):
+            val_lims = (-6e-5,6e-5)
+        plt_fmt["value_lims"] = val_lims
 
         return plt_fmt
     
@@ -330,10 +336,18 @@ class Cholla2DVizFmt:
         plt_fmt["value_fmt"] = value_fmt
         
         # value limits
-        val_lims = (0,0.5)
-        if (self.test_name == "sound_wave"):
-            val_lims = (0., 1.)
-        plt_fmt["val_lims"] = val_lims
+        val_lims = (-1.,1.)
+        if (self.test_name == "implosion"):
+            val_lims = (-0.15, 0.15)
+        elif (self.test_name == "KH_resind"):
+            val_lims = (-0.5, 0.5)
+        elif (self.test_name == "sod"):
+            val_lims = (-0.1, 0.1)
+        elif (self.test_name == "Rayleigh_Taylor"):
+            val_lims = (-0.015, 0.015)
+        elif (self.test_name == "sound_wave"):
+            val_lims = (-6e-5,6e-5)
+        plt_fmt["value_lims"] = val_lims
 
         return plt_fmt
     
@@ -355,18 +369,61 @@ class Cholla2DVizFmt:
         
         # colorbar
         value_fmt = self.def_val_fmt
-        if (self.test_name == "sod"):
-            value_fmt = scinot2_fmt
-        elif (self.test_name == "sound_wave"):
+        if (self.test_name == "sound_wave"):
             value_fmt = scinot2_fmt
         plt_fmt["value_fmt"] = value_fmt
         
         # value limits
-        val_lims = (0,0.5)
-        if (self.test_name == "sound_wave"):
-            val_lims = (0., 1.)
-        plt_fmt["val_lims"] = val_lims
+        val_lims = (0.,1.)
+        if (self.test_name == "implosion"):
+            val_lims = (-0.15, 0.15)
+        elif (self.test_name == "KH_resind"):
+            val_lims = (0., 0.5)
+        elif (self.test_name == "Rayleigh_Taylor"):
+            val_lims = (0., 0.02)
+        elif (self.test_name == "sound_wave"):
+            val_lims = (0, 2e-4)
+        plt_fmt["value_lims"] = val_lims
 
         return plt_fmt
 
-    
+
+    def inten_fmt(self, compare=False):
+        '''
+        set the formatting for the internal energy
+        '''
+        
+        plt_fmt = {}
+        plt_fmt["value_key"] = "int_energy"
+        plt_fmt["title"] = "Int. Energy"
+        
+        # figsize
+        fig_size=self.def_figsize
+        if compare:
+            fig_size=self.def_compare_figsize
+            if (self.test_name == "Rayleigh_Taylor"):
+                plt_fmt["fig_size"]=(8,6)
+        plt_fmt["fig_size"]=fig_size
+        
+        # colorbar
+        value_fmt = self.def_val_fmt
+        if (self.test_name == "sound_wave"):
+            value_fmt = scinot3_fmt
+            
+        plt_fmt["value_fmt"] = value_fmt
+
+        # value limits
+        val_lims = (0,4.)
+        if (self.test_name == "implosion"):
+            val_lims = (2., 5.)
+        elif (self.test_name == "KH_disc"):
+            val_lims = (2., 4.)
+        elif (self.test_name == "sod"):
+            val_lims = (1.5, 3.5)
+        elif (self.test_name == "Rayleigh_Taylor"):
+            val_lims = (0.5, 2.)
+        elif (self.test_name == "sound_wave"):
+            val_lims = (8e-1, 1.)
+        plt_fmt["value_lims"] = val_lims
+
+        return plt_fmt

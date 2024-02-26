@@ -35,7 +35,37 @@ class ChollaViz:
             
         elif self.num_D == 3:
             self.chollaxDViz = ChollaxDViz(self.ch_snap, num_dims=self.num_D, test_name=self.test_name, reduce_dim_fn=self.reduce_dim_fn)
+        
+        self.set_value_keys()
+        self.set_plot_keys()
+        
     
+    def set_plot_keys(self):
+        '''
+        helper function to find appropriate plotting method to call
+        '''
+        self.plot_keys = {}
+        self.plot_keys[self.pressure_key] = self.pressure
+        self.plot_keys[self.density_key] = self.density
+        self.plot_keys[self.vel_str] = self.velocity
+        self.plot_keys[self.inten_key] = self.internal_energy
+    
+    def set_value_keys(self):
+        '''
+        set the strings 
+        '''
+        self.pressure_key = "pressure"
+        self.density_key = "density"
+        self.velx_key = "vel_x"
+        self.vely_key = "vel_y"
+        self.vel_key = "vel_mag"
+        self.inten_key = "int_energy"
+        
+        self.vel_str = "velocity"
+        self.velx_str = "velocity (x)"
+        self.vely_str = "velocity (y)"
+        self.inten_str = "internal_energy"
+        
     
     def run_check(self, ch_snap2):
         '''
@@ -49,9 +79,20 @@ class ChollaViz:
         
         temporary solution is to just ensure they have the same data directory
         '''
+        err = False
+        # err = (self.ch_snap.dataDir != ch_snap2.dataDir)
         
+        # remove final snapshot number directory from dataDir string. compare both
+        revdataDir = self.ch_snap.dataDir[::-1]
+        lastslash_ind = revdataDir.index("/")
+        datadir1 = revdataDir[lastslash_ind:][::-1]
         
-        if (self.ch_snap.dataDir != ch_snap2.dataDir):
+        revdataDir = ch_snap2.dataDir[::-1]
+        lastslash_ind = revdataDir.index("/")
+        datadir2 = revdataDir[lastslash_ind:][::-1]
+        err = (datadir1 != datadir2)
+        
+        if (err):
             err_message = f'''
             The two snapshots do not come from the same Cholla Run
             Currently can only compare snaps from same sim run
@@ -64,8 +105,7 @@ class ChollaViz:
         plots pressure, let users change plt kwargs for each plot if they want
         '''
         
-        pressure_key = "pressure"
-        self.ch_snap.key_datacheck(pressure_key, raise_keyerr=True)
+        self.ch_snap.key_hydrodatacheck(self.pressure_key, raise_keyerr=True)
         
         if plt_kwargs is None:
             plt_kwargs = self.plt_kwargs
@@ -78,22 +118,32 @@ class ChollaViz:
         plots density, let users change plt kwargs for each plot if they want
         '''
 
-        density_key = "density"
-        self.ch_snap.key_datacheck(density_key, raise_keyerr=True)
+        self.ch_snap.key_hydrodatacheck(self.density_key, raise_keyerr=True)
         
         if plt_kwargs is None:
             plt_kwargs = self.plt_kwargs
         
         self.chollaxDViz.density(plt_kwargs)
     
+    def internal_energy(self, plt_kwargs=None):
+        '''
+        plots internal energy, let users change plt kwargs for each plot if they want
+        '''
+
+        self.ch_snap.key_hydrodatacheck(self.inten_key, raise_keyerr=True)
+        
+        if plt_kwargs is None:
+            plt_kwargs = self.plt_kwargs
+        
+        self.chollaxDViz.int_energy(plt_kwargs)
+    
     def velocity_x(self, plt_kwargs=None):
         '''
         plots x velocity, let users change plt kwargs for each plot if they want
         '''
-
-        velx_key = "vel_x"
-        velx_str = "velocity (x)"
-        self.ch_snap.key_datacheck(velx_key, key_str=velx_str, raise_keyerr=True)
+        
+        
+        self.ch_snap.key_hydrodatacheck(self.velx_key, key_str=self.velx_str, raise_keyerr=True)
         
         if plt_kwargs is None:
             plt_kwargs = self.plt_kwargs
@@ -105,9 +155,7 @@ class ChollaViz:
         plots y velocity, let users change plt kwargs for each plot if they want
         '''
 
-        vely_key = "vel_y"
-        vely_str = "velocity (y)"
-        self.ch_snap.key_datacheck(vely_key, key_str=vely_str, raise_keyerr=True)
+        self.ch_snap.key_hydrodatacheck(self.vely_key, key_str=self.vely_str, raise_keyerr=True)
         
         if plt_kwargs is None:
             plt_kwargs = self.plt_kwargs
@@ -119,9 +167,7 @@ class ChollaViz:
         plots velocity, let users change plt kwargs for each plot if they want
         '''
 
-        vel_key = "vel_mag"
-        vel_str = "velocity"
-        self.ch_snap.key_datacheck(vel_key, key_str=vel_str, raise_keyerr=True)
+        self.ch_snap.key_hydrodatacheck(self.vel_key, key_str=self.vel_str, raise_keyerr=True)
         
         if plt_kwargs is None:
             plt_kwargs = self.plt_kwargs
@@ -134,10 +180,9 @@ class ChollaViz:
         plots density in comparison to ch_snap2's density
         '''
 
-        density_key = "density"
         
-        self.ch_snap.key_datacheck(density_key, raise_keyerr=True)
-        ch_snap2.key_datacheck(density_key, raise_keyerr=True)
+        self.ch_snap.key_hydrodatacheck(self.density_key, raise_keyerr=True)
+        ch_snap2.key_hydrodatacheck(self.density_key, raise_keyerr=True)
         
         self.run_check(ch_snap2)
         
@@ -151,10 +196,8 @@ class ChollaViz:
         plots pressure in comparison to ch_snap2's pressure
         '''
 
-        pressure_key = "pressure"
-        
-        self.ch_snap.key_datacheck(pressure_key, raise_keyerr=True)
-        ch_snap2.key_datacheck(pressure_key, raise_keyerr=True)
+        self.ch_snap.key_hydrodatacheck(self.pressure_key, raise_keyerr=True)
+        ch_snap2.key_hydrodatacheck(self.pressure_key, raise_keyerr=True)
         
         self.run_check(ch_snap2)
         
@@ -168,11 +211,8 @@ class ChollaViz:
         plots velocity in comparison to ch_snap2's velocity
         '''
 
-        vel_key = "vel_mag"
-        vel_str = "velocity"
-        
-        self.ch_snap.key_datacheck(vel_key, key_str=vel_str, raise_keyerr=True)
-        ch_snap2.key_datacheck(vel_key, key_str=vel_str, raise_keyerr=True)
+        self.ch_snap.key_hydrodatacheck(self.vel_key, key_str=self.vel_str, raise_keyerr=True)
+        ch_snap2.key_hydrodatacheck(self.vel_key, key_str=self.vel_str, raise_keyerr=True)
         
         self.run_check(ch_snap2)
         
@@ -185,11 +225,9 @@ class ChollaViz:
         '''
         plots x-velocity in comparison to ch_snap2's x-velocity
         '''
-        velx_key = "vel_x"
-        velx_str = "velocity (x)"
         
-        self.ch_snap.key_datacheck(velx_key, key_str=velx_str, raise_keyerr=True)
-        ch_snap2.key_datacheck(velx_key, key_str=velx_str, raise_keyerr=True)
+        self.ch_snap.key_hydrodatacheck(self.velx_key, key_str=self.velx_str, raise_keyerr=True)
+        ch_snap2.key_hydrodatacheck(self.velx_key, key_str=self.velx_str, raise_keyerr=True)
         
         self.run_check(ch_snap2)
         
@@ -202,11 +240,9 @@ class ChollaViz:
         '''
         plots y-velocity in comparison to ch_snap2's y-velocity
         '''
-        vely_key = "vel_y"
-        vely_str = "velocity (y)"
         
-        self.ch_snap.key_datacheck(vely_key, key_str=vely_str, raise_keyerr=True)
-        ch_snap2.key_datacheck(vely_key, key_str=vely_str, raise_keyerr=True)
+        self.ch_snap.key_hydrodatacheck(self.vely_key, key_str=self.vely_str, raise_keyerr=True)
+        ch_snap2.key_hydrodatacheck(self.vely_key, key_str=self.vely_str, raise_keyerr=True)
         
         self.run_check(ch_snap2)
         
@@ -214,4 +250,19 @@ class ChollaViz:
             plt_kwargs = self.plt_kwargs
         
         self.chollaxDViz.velocityy_compare(ch_snap2, plt_kwargs)
+    
+    def internalenergy_compare(self, ch_snap2, plt_kwargs=None):
+        '''
+        plots internal energy in comparison to ch_snap2's internal energy
+        '''
+        
+        self.ch_snap.key_hydrodatacheck(self.inten_key, key_str=self.inten_str, raise_keyerr=True)
+        ch_snap2.key_hydrodatacheck(self.inten_key, key_str=self.inten_str, raise_keyerr=True)
+        
+        self.run_check(ch_snap2)
+        
+        if plt_kwargs is None:
+            plt_kwargs = self.plt_kwargs
+        
+        self.chollaxDViz.internal_energy_compare(ch_snap2, plt_kwargs)
 

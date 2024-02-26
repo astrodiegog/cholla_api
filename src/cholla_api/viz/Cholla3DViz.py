@@ -40,8 +40,12 @@ def plot_value_2D(data, head, plt_fmt, plt_kwargs, red_fn=def_reduce_fn):
     time_str = f"t = {time:.3f}"
 
     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=figsize)
+    if (plt_fmt.get("value_lims")):
+        vmin, vmax = plt_fmt["value_lims"]
+    else:
+        vmin, vmax = np.min(value), np.max(value)
 
-    im = ax.imshow(value)
+    im = ax.imshow(value, vmin=vmin, vmax=vmax)
     divider = make_axes_locatable(ax)
     cax = divider.append_axes('right', size='5%', pad=0.05)
 
@@ -89,7 +93,10 @@ def plot_value_compare_2D(data1, head1, data2, head2, plt_fmt, plt_kwargs, red_f
     
     gridspec = {'width_ratios': [1, 1, 0.08]}
     fig, ax = plt.subplots(nrows=1, ncols=3, figsize=figsize, gridspec_kw=gridspec)
-    vmin, vmax = np.min(values), np.max(values)    
+    if (plt_fmt.get("value_lims")):
+        vmin, vmax = plt_fmt["value_lims"]
+    else:
+        vmin, vmax = np.min(value), np.max(value)
 
     for i in range(2):
         im = ax[i].imshow(values[i], vmin=vmin, vmax=vmax)
@@ -156,17 +163,17 @@ class Cholla3DVizFmt:
         fig_size=self.def_figsize
         if compare:
             fig_size=self.def_compare_figsize
-            if (self.test_name == "Rayleigh_Taylor"):
-                fig_size=(8,6)
         plt_fmt["fig_size"] = fig_size
         
         # colorbar/y-value for dimension reduction
         val_fmt = self.def_val_fmt
-        if (self.test_name == "KH_resind"):
-            val_fmt = reg1_fmt
-        elif (self.test_name == "sound_wave"):
-            val_fmt = reg5_fmt
         plt_fmt["value_fmt"] = val_fmt
+        
+        # value limits
+        val_lims = (0., 1.)
+        if (self.test_name == "KH_resind"):
+            val_lims = (0.5, 7.0)
+        plt_fmt["value_lims"] = val_lims
         
         return plt_fmt
     
@@ -180,17 +187,17 @@ class Cholla3DVizFmt:
         fig_size=self.def_figsize
         if compare:
             fig_size=self.def_compare_figsize
-            if (self.test_name == "Rayleigh_Taylor"):
-                fig_size=(8,6)
         plt_fmt["fig_size"]=fig_size
         
         # colorbar/y-value
         value_fmt = self.def_val_fmt
-        if (self.test_name == "KH_resind"):
-            value_fmt = reg1_fmt
-        elif (self.test_name == "sound_wave"):
-            value_fmt = reg5_fmt
         plt_fmt["value_fmt"] = value_fmt
+        
+        # value limits
+        val_lims = (0., 1.)
+        if (self.test_name == "KH_resind"):
+            val_lims = (0., 150.0)
+        plt_fmt["value_lims"] = val_lims
         
         return plt_fmt
     
@@ -204,17 +211,17 @@ class Cholla3DVizFmt:
         figsize=self.def_figsize
         if compare:
             figsize=self.def_compare_figsize
-            if (self.test_name == "Rayleigh_Taylor"):
-                figsize=(8,6)   
         plt_fmt["fig_size"] = figsize
         
         # colorbar/y-value
         value_fmt = self.def_val_fmt
-        if (self.test_name == "sod"):
-            value_fmt = scinot2_fmt
-        elif (self.test_name == "sound_wave"):
-            value_fmt = scinot2_fmt
         plt_fmt["value_fmt"] = value_fmt
+        
+        # value limits
+        val_lims = (0., 1.)
+        if (self.test_name == "KH_resind"):
+            val_lims = (-0.8, 0.8)
+        plt_fmt["value_lims"] = val_lims
         
         return plt_fmt
     
@@ -227,15 +234,15 @@ class Cholla3DVizFmt:
         fig_size = self.def_figsize
         if compare:
             fig_size=self.def_compare_figsize
-            if (self.test_name == "Rayleigh_Taylor"):
-                plt_fmt["fig_size"]=(8,6)
         plt_fmt["fig_size"]=fig_size
         
         # colorbar/y-value
         value_fmt = self.def_val_fmt
-        if (self.test_name == "sound_wave"):
-            value_fmt = scinot2_fmt
         plt_fmt["value_fmt"] = value_fmt
+        
+        # value limits
+        val_lims = (-1., 1.)
+        plt_fmt["value_lims"] = val_lims
         
         return plt_fmt
     
@@ -248,18 +255,36 @@ class Cholla3DVizFmt:
         fig_size=self.def_figsize
         if compare:
             fig_size=self.def_compare_figsize
-            if (self.test_name == "Rayleigh_Taylor"):
-                plt_fmt["fig_size"]=(8,6)
         plt_fmt["fig_size"]=fig_size
         
         # colorbar
         value_fmt = self.def_val_fmt
-        if (self.test_name == "sod"):
-            value_fmt = scinot2_fmt
-        elif (self.test_name == "sound_wave"):
-            value_fmt = scinot2_fmt
         plt_fmt["value_fmt"] = value_fmt
+        
+        # value limits
+        val_lims = (0., 1.)
+        plt_fmt["value_lims"] = val_lims
         
         return plt_fmt
 
     
+    def inten_fmt(self, compare=False):
+        plt_fmt = {}
+        plt_fmt["value_key"] = "int_energy"
+        plt_fmt["title"] = "Int. Energy"
+        
+        # figsize
+        fig_size=self.def_figsize
+        if compare:
+            fig_size=self.def_compare_figsize
+        plt_fmt["fig_size"]=fig_size
+        
+        # colorbar
+        value_fmt = self.def_val_fmt
+        plt_fmt["value_fmt"] = value_fmt
+        
+        # value limits
+        val_lims = (0., 5.)
+        plt_fmt["value_lims"] = val_lims
+        
+        return plt_fmt

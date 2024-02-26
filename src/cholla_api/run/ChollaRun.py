@@ -13,49 +13,48 @@ class ChollaRun:
     Class that holds important information to manipulate and study a Cholla simulation run
     '''
 
-    def __init__(self, basePath, namebase='h5', data_dir='/data', img_dir='/imgs', test_name=""):
+    def __init__(self, basePath, namebase='h5', data_dir='/data', img_dir='/imgs', test_name="", hydro=True, gravy=False, parts=False):
         self.basePath = basePath
         self.dataPath = self.basePath + data_dir
         self.imgsPath = self.basePath + img_dir
         self.namebase = namebase
-        self.totnSnap = len(glob.glob1(self.dataPath, f"*.{self.namebase}.0"))
-        self.nBoxes = len(glob.glob1(self.dataPath, f"0.{self.namebase}.*"))
+        dirsin_data = next(os.walk(self.dataPath))[1] # pray no more files are in data_dir
+        self.totnSnap = len(dirsin_data)
+        self.nBoxes = len(glob.glob1(self.dataPath + "/0", f"0.{self.namebase}.*"))
         self.test_name = test_name
         
-        self.check_totnsnap()
+        self.hydro = hydro
+        self.gravy = gravy
+        self.parts = parts
         
-    def check_totnsnap(self):
-        '''
-        raise exception if the total number of snapshots is incorrect
-        '''
-        num_datafiles = len(os.listdir(self.dataPath))
-        
-        if (num_datafiles != self.totnSnap * self.nBoxes):
-            err_message = f'''
-            The given number of snapshots ({self.totnSnap:.0f}) and number of boxes ({self.nBoxes:.0f})
-            \t does not match the number of files in data directory ({num_datafiles:.0f})
-            '''
-            
-            raise Exception(err_message)
 
-    def createSnap(self, nSnap, keys=[], load_data=True, snap_head=False):
+    def createSnap(self, nSnap, keys={}, load_data=True, snap_head=False, hydro=True, gravy=False, parts=False):
         '''
         creates a ChollaSnap instance
         params:
             nSnap (int): the snapshot number to load
-            keys (list): list of keys to load from the dataset
+            keys (dict): dictionary holding list of keys to load from dataset
             load_data (bool): whether to load the key data or not
             snap_head (bool): whether to keep the sim head with snapshot, or pass onto ChollaRun class
         '''
         if nSnap > self.totnSnap:
             print('Invalid snap number')
             return -1
-        ch_snap = ChollaSnap(nSnap, self.dataPath, self.namebase, self.nBoxes)
+        ch_snap = ChollaSnap(nSnap, self.dataPath, self.namebase, self.nBoxes, hydro=hydro, gravy=gravy, parts=parts)
+        ch_snap.set_head() # needed to load in data
+            
         if load_data:
-            ch_snap.load_data(keys)
+            if hydro:
+                ch_snap.load_hydro(keys["hydro"])
+            if gravy:
+                ch_snap.load_gravy(keys["gravy"])
+            if parts:
+                ch_snap.load_parts(keys["parts"])
+        
         if not snap_head:
             self.head = dict(ch_snap.head)
             ch_snap.head = None
+        
         return ch_snap
 
     def beg_vs_fin(self, keys, imgftype='png', test_name="", valuecalcs=None, plots_type=None, plt_kwargs=None):
@@ -94,20 +93,30 @@ class ChollaRun:
                 plt_kwargs["imgfout"] = imgfout
             ch_comp.velocity(plt_kwargs)
 
+    
 
-
-    def make_movie(self, keys, imgfbase, imgftype='png', test_name="", movie_nsnaps=None, valuecalcs=None, movie_plots=None, plt_kwargs=None):
+    def make_movie(self, keys, imgfbase="img", imgftype='png', movie_nsnaps=None, valuecalcs=None, plot_vals=None, plt_kwargs=None):
         '''
         helper function that loops over each movie_nsnap and saves a figure
+        
+        keys (dict): dictionary holding list of keys to load from dataset
+        imgfbase (str) - prefix to the file name being saved
+        imgftype (str) - file extension
+        movie_nsnaps (arr) - list/arr of snapshot numbers to use
+        valuecalcs (list) - list of chollavalue calcs to use
+        plot_vals (list) - list of values that serve as keys into data structs
+        plt_kwargs (dict) - dictionary of importatnt plotting key word args
         '''
-        if movie_plots is None:
-            movie_plots = ["density", "velocity", "pressure"]
+        if plot_vals is None:
+            plot_vals = ["density", "velocity", "pressure"]
         if movie_nsnaps is None:
             movie_nsnaps = range(self.totnSnap)
         if plt_kwargs is None:
             plt_kwargs = {}
+        # number of digits allowed to specify snapshot number
         fnums = int(np.ceil(np.log10(len(movie_nsnaps))) + 1)
         
+        # create a progress array tracker
         progress_arr = np.arange(1,10)*0.1
         if len(movie_nsnaps) < 10:
             # less than 10 nsnaps, just look at 30, 50, 80%
@@ -117,38 +126,28 @@ class ChollaRun:
         progress_ind_final = progress_arr.size
             
         for n, nsnap in enumerate(movie_nsnaps):
-            ch_snap = self.createSnap(nsnap, keys=keys, load_data=True, snap_head=True)
+            ch_snap = self.createSnap(nsnap, keys=keys, load_data=True, snap_head=True, hydro=self.hydro, gravy=self.gravy, parts=self.parts)
             if valuecalcs is not None:
                 ch_snap.calc_vals(valuecalcs)
             if plt_kwargs.get('save'):
                 fnum_str = str(n).zfill(fnums)
-                img_fbase = f"{imgfbase}_{fnum_str}.{imgftype}"
+                img_fname = f"{imgfbase}_{fnum_str}.{imgftype}"
                 
-            ch_viz = ChollaViz(ch_snap, test_name=test_name, plt_kwargs=plt_kwargs)
+            ch_viz = ChollaViz(ch_snap, test_name=self.test_name, plt_kwargs=plt_kwargs)
             
-            if ("density" in movie_plots):
+            for plot_val in plot_vals:
                 if plt_kwargs.get('save'):
-                    density_dir = f"{self.imgsPath}/density"
-                    pathlib.Path(density_dir).mkdir(parents=True, exist_ok=True)
-                    imgfout = density_dir + f"/{img_fbase}"
+                    curr_plt_dir = f"{self.imgsPath}/{plot_val}"
+                    # make sure plotting directory is there
+                    if not os.path.isdir(curr_plt_dir):
+                        print(f"Creating directory {curr_plt_dir}")
+                        pathlib.Path(curr_plt_dir).mkdir(parents=True, exist_ok=False)
+                        
+                    imgfout = curr_plt_dir + f"/{img_fname}"
                     plt_kwargs['imgfout'] = imgfout
-                ch_viz.density(plt_kwargs)
                 
-            if ("velocity" in movie_plots):
-                if plt_kwargs.get('save'):
-                    velocity_dir = f"{self.imgsPath}/velocity"
-                    pathlib.Path(velocity_dir).mkdir(parents=True, exist_ok=True)
-                    imgfout = velocity_dir + f"/{img_fbase}"
-                    plt_kwargs['imgfout'] = imgfout
-                ch_viz.velocity(plt_kwargs)
-                
-            if ("pressure" in movie_plots):
-                if plt_kwargs.get('save'):
-                    pressure_dir = f"{self.imgsPath}/pressure"
-                    pathlib.Path(pressure_dir).mkdir(parents=True, exist_ok=True)
-                    imgfout = pressure_dir + f"/{img_fbase}"
-                    plt_kwargs['imgfout'] = imgfout
-                ch_viz.pressure(plt_kwargs)
+                curr_plt_fn = ch_viz.plot_keys[plot_val]
+                curr_plt_fn(plt_kwargs)
             
             if (n == progress_ind[progress_ind_curr]):
                 curr_progress = progress_arr[progress_ind_curr]

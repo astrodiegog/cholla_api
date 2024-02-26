@@ -196,6 +196,49 @@ class Cholla1DVizFmt:
 
         return plt_fmt
     
+    def inten_fmt(self, compare=False):
+        '''
+        set the formatting for the internal energy
+        '''
+        
+        plt_fmt = {}
+        plt_fmt["value_key"] = "int_energy"
+        
+        # figsize & (y label OR title)
+        figsize = self.def_figsize
+        if compare:
+            plt_fmt["y_label"] = "Internal Energy"
+            figsize = self.def_compare_figsize
+        else:
+            plt_fmt["title"] = "Internal Energy"
+        plt_fmt["fig_size"] = figsize
+        
+        # y value
+        yval_fmt = self.def_yval_fmt
+        if (self.test_name == "square_wave"):
+            yval_fmt = reg3_fmt
+        plt_fmt["yval_fmt"] = yval_fmt
+
+        # y lims
+        ylim_fmt = (0.,1.)
+        if (self.test_name == "blast"):
+            ylim_fmt = (0,1400.)
+        elif (self.test_name == "sod"):
+            ylim_fmt = (1.5, 4.)
+        elif (self.test_name == "constant"):
+            ylim_fmt = (-1, 1)
+        elif (self.test_name == "square_wave"):
+            ylim_fmt = (0.007,0.018)
+        elif (self.test_name == "strong_shock"):
+            ylim_fmt = (0.,28.)
+        elif (self.test_name == "two_shocks"):
+            ylim_fmt = (0.,250.)
+        
+        plt_fmt["ylims"] = ylim_fmt
+
+        return plt_fmt
+    
+    
     def vel_fmt(self, compare=False):
         '''
         set the formatting for the velocity plotting function

@@ -54,8 +54,8 @@ class ChollaVizCompare:
         
         density_key = "density"
         
-        self.ch_snap1.key_datacheck(density_key, raise_keyerr=True)
-        self.ch_snap2.key_datacheck(density_key, raise_keyerr=True)
+        self.ch_snap1.key_hydrodatacheck(density_key, raise_keyerr=True)
+        self.ch_snap2.key_hydrodatacheck(density_key, raise_keyerr=True)
         
         if plt_kwargs is None:
             plt_kwargs = self.plt_kwargs
@@ -66,8 +66,20 @@ class ChollaVizCompare:
         
         pressure_key = "pressure"
         
-        self.ch_snap1.key_datacheck(pressure_key, raise_keyerr=True)
-        self.ch_snap2.key_datacheck(pressure_key, raise_keyerr=True)
+        self.ch_snap1.key_hydrodatacheck(pressure_key, raise_keyerr=True)
+        self.ch_snap2.key_hydrodatacheck(pressure_key, raise_keyerr=True)
+        
+        if plt_kwargs is None:
+            plt_kwargs = self.plt_kwargs
+        
+        self.chollaxDViz.pressure_compare(self.ch_snap2, plt_kwargs)
+        
+    def pressure(self, plt_kwargs=None):
+        
+        pressure_key = "pressure"
+        
+        self.ch_snap1.key_hydrodatacheck(pressure_key, raise_keyerr=True)
+        self.ch_snap2.key_hydrodatacheck(pressure_key, raise_keyerr=True)
         
         if plt_kwargs is None:
             plt_kwargs = self.plt_kwargs
@@ -79,8 +91,8 @@ class ChollaVizCompare:
         vel_key = "vel_mag"
         vel_str = "velocity"
         
-        self.ch_snap1.key_datacheck(vel_key, key_str=vel_str, raise_keyerr=True)
-        self.ch_snap2.key_datacheck(vel_key, key_str=vel_str, raise_keyerr=True)
+        self.ch_snap1.key_hydrodatacheck(vel_key, key_str=vel_str, raise_keyerr=True)
+        self.ch_snap2.key_hydrodatacheck(vel_key, key_str=vel_str, raise_keyerr=True)
         
         if plt_kwargs is None:
             plt_kwargs = self.plt_kwargs
@@ -92,8 +104,8 @@ class ChollaVizCompare:
         velx_key = "vel_x"
         velx_str = "velocity (x)"
         
-        self.ch_snap1.key_datacheck(velx_key, key_str=velx_str, raise_keyerr=True)
-        self.ch_snap2.key_datacheck(velx_key, key_str=velx_str, raise_keyerr=True)
+        self.ch_snap1.key_hydrodatacheck(velx_key, key_str=velx_str, raise_keyerr=True)
+        self.ch_snap2.key_hydrodatacheck(velx_key, key_str=velx_str, raise_keyerr=True)
         
         
         if plt_kwargs is None:
@@ -106,8 +118,8 @@ class ChollaVizCompare:
         vely_key = "vel_y"
         vely_str = "velocity (y)"
         
-        self.ch_snap1.key_datacheck(vely_key, key_str=vely_str, raise_keyerr=True)
-        self.ch_snap2.key_datacheck(vely_key, key_str=vely_str, raise_keyerr=True)
+        self.ch_snap1.key_hydrodatacheck(vely_key, key_str=vely_str, raise_keyerr=True)
+        self.ch_snap2.key_hydrodatacheck(vely_key, key_str=vely_str, raise_keyerr=True)
         
         if plt_kwargs is None:
             plt_kwargs = self.plt_kwargs
