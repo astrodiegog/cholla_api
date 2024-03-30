@@ -1,346 +1,450 @@
 import numpy as np
 import h5py
 
+from cholla_api.data.ChollaData import ChollaDataHead
+from cholla_api.data.ChollaHydroBox import ChollaHydroBox
+from cholla_api.data.ChollaParticleBox import ChollaParticleBox
 
-'''
-My code has a couple of if(cholladatatype) where I do the same
-    action depending on whether its gravity, particles, or hydro
+class ChollaSnapHead:
+    '''
+    Cholla Snapshot Head object
+        Holds snapshot specific information
+        Initialized with:
+        - nSnap (int): number of the snapshot within run
+    '''
     
-    I could keep doing
-        general function
-        specific function 1, 2, 3
+    def __init__(self, nSnap):
+        self.nSnap = nSnap
+        self.head_set = False
+        self.datahead_set = False
     
-    I could also create an index / id for each data type loaded as var, not fixed.
-        this way, I'm not passing strings but instead chsnap.datagrav_id
-'''
+    def set_head(self, nBox, namebase, dataDir, particles_flag, cosmo_flag, old_format):
+        '''
+        Set the header attributes for this object
+        
+        Args:
+            nBox (int): what box number to use
+            namebase (str): middle string for data file names
+            dataDir (str): path to the data directory
+            particles_flag (bool): whether particle data was saved
+            cosmo_flag (bool): whether cosmology type was used
+            old_format (bool): whether the old file structure was used
+        Returns:
+            ...
+        '''
+        fName = '{0}.{1}.{2}'.format(self.nSnap, namebase, nBox)
+        if old_format:
+            fPath = dataDir + '/' + fName
+        else:
+            fPath = dataDir + '/' + str(self.nSnap) + '/' + fName
+        fObj = h5py.File(fPath, 'r')
+        
+        # grab t + dt
+        self.t = float(fObj.attrs['t'])
+        self.dt = float(fObj.attrs['dt'])
+        
+        # grab cosmology info
+        # cosmo info not well defined for snap=0
+        if cosmo_flag and self.nSnap>0:
+            self.a = float(fObj.attrs['Current_a'])
+            self.z = float(fObj.attrs['Current_z'])
+        
+        fObj.close()
+        
+        # grab particles info
+        # particle info not well defined for snap=0
+        if particles_flag and self.nSnap>0:
+            fName = '{0}_particles.{1}.{2}'.format(self.nSnap, namebase, nBox)
+            if old_format:
+                fPath = dataDir + '/' + fName
+            else:
+                fPath = dataDir + '/' + str(self.nSnap) + '/' + fName
+            fObj = h5py.File(fPath, 'r')
+            self.t_particles = fObj.attrs['t_particles']
+            self.dt_particles = fObj.attrs['dt_particles']
+            fObj.close()
+        
+        self.head_set = True
+        
+    
+    def set_datahead(self, nBoxes, namebase, dataDir, particles_flag, old_format):
+        '''
+        Create and populate DataHead object. Set each DataHydroHeads's and
+            DataParticleHeads's arrays of objects
+        
+        Args:
+            nBoxes (int): total number of boxes used to run simulation
+            namebase (str): middle string for data file names
+            dataDir (str): path to the data directory
+            particles_flag (bool): whether particle data was saved
+            old_format (bool): whether the old file structure was used
+        Returns:
+            ...
+        '''
+        self.DataHead = ChollaDataHead(nBoxes, old_format)
+        self.DataHead.set_head(self.nSnap, namebase, dataDir, particles_flag)
+        self.datahead_set = True
+
 
 
 class ChollaSnap:
     '''
-    Load in the data onto a dictionary. Optionally also save the header
+    Cholla Snapshot object
+        Holds snapshot specific information and methods to access data for that
+            snapshot
+        
+        My two main get_data() functions loop over the BoxHeads and place all
+            of the requested data onto one array.
+    
+    TODO:
+        create method to load data within a requested domain. would I have to 
+            create a separate method in BoxHeads for global domain? this would
+            save having to save the local dims and offset redundant.
+        LOOK AT BRUNO'S PULL REQUEST. he essentially does something very similar
+            to this!
     '''
-
-    def __init__(self, nSnap, dataDir, namebase, nBoxes, hydro=True, gravy=False, parts=False):
-        self.dataDir = dataDir + "/" + str(nSnap)
-        self.nSnap = nSnap
-        self.namebase = namebase
-        self.nBoxes = nBoxes
-        self.head = None
-        self.dims = None
-        self.dims_loc = None
+    
+    def __init__(self, SnapHead):
+        self.head = SnapHead
+        # assert that the SnapHead is already set
+        assert self.head.head_set
         
-        self.data_hydro, self.data_gravy, self.data_parts = None, None, None
-        
-        if hydro:
-            self.data_hydro = {}
-        if gravy:
-            self.data_gravy = {}
-        if parts:
-            self.data_parts = {}
-
-    def key_datacheck(self, dataftype, key, key_str=None, raise_keyerr=False):
+    def get_hydroboxdata(self, namebase, dataDir, data_key, nBox):
         '''
-        check whether a key is inside the data
+        Grab data for a specific Box
+            
+        Args:
+            namebase (str): middle string for data file names
+            dataDir (str): path to the data directory
+            data_key (str): key to access data from hdf5 file
+            nBox (int): index of the box to load
+        Returns:
+            (arr): array that will hold data information
         '''
-        cholla_data = None
-        if dataftype == "hydro":
-            cholla_data = self.data_hydro
-        elif dataftype == "parts":
-            cholla_data = self.data_parts
-        elif dataftype == "gravy":
-            cholla_data = self.data_gravy
+        assert self.head.DataHead.head_set
+        assert self.head.DataHead.HydroHead.head_set
+        
+        # make sure requested nBox is valid
+        assert self.head.DataHead.check_nbox(nBox)
+        
+        # make sure requested data_key is valid
+        assert self.head.DataHead.HydroHead.check_datakey(data_key)
+        
+        HydroBoxHead = self.head.DataHead.HydroHead.HydroBoxHeads[nBox]
+        
+        # ensure HydroBoxHead has local_dims and offset
+        assert HydroBoxHead.head_set
+        ch_hydrobox = ChollaHydroBox(HydroBoxHead, self.head.nSnap)
+        
+        return ch_hydrobox.get_data(namebase, dataDir, data_key, self.head.DataHead.old_format)
+    
+    
+    def get_particleboxdata(self, namebase, dataDir, data_key, nBox):
+        '''
+        Grab data for a specific Box
+            
+        Args:
+            namebase (str): middle string for data file names
+            dataDir (str): path to the data directory
+            data_key (str): key to access data from hdf5 file
+            nBox (int): index of the box to load
+        Returns:
+            arr (arr): array that will hold data information
+        '''
+        assert self.head.DataHead.head_set
+        assert self.head.DataHead.ParticleHead.head_set
+        
+        # make sure requested nBox is valid
+        assert self.head.DataHead.check_nbox(nBox)
+        
+        # make sure requested data_key is valid
+        assert self.head.DataHead.ParticleHead.check_datakey(data_key)
+        
+        ParticleBoxHead = self.head.DataHead.ParticleHead.ParticleBoxHeads[nBox]
+        
+        # ensure ParticleBoxHead has local_dims and offset
+        assert ParticleBoxHead.head_set
+        ch_particlebox = ChollaParticleBox(ParticleBoxHead, self.head.nSnap)
+        
+        return ch_particlebox.get_data(namebase, dataDir, data_key, self.head.DataHead.old_format)
+    
+    
+    def get_hydrodata(self, namebase, dataDir, data_key, nBoxes=None):
+        '''
+        Grab and concatenate data onto one large array for the entire simulation
+            box.
+            
+        Args:
+            namebase (str): middle string for data file names
+            dataDir (str): path to the data directory
+            data_key (str): key to access data from hdf5 file
+            nBoxes (list): (optional) list of boxes to load, default is all
+        Returns:
+            arr (arr): array that will hold data information
+        '''
+        assert self.head.DataHead.head_set
+        assert self.head.DataHead.HydroHead.head_set
+        
+        # make sure requested data_key is valid
+        assert self.head.DataHead.HydroHead.check_datakey(data_key)
+        
+        # initialize array
+        arr = np.zeros(self.head.DataHead.HydroHead.dims)
+        
+        # create the hydro box heads to loop over
+        if nBoxes is not None:
+            hydro_box_heads = np.empty(len(nBoxes), dtype=object)
+            for nBox, nBox_toload in enumerate(nBoxes):
+                # make sure requested nBox is valid
+                assert self.head.DataHead.check_nbox(nBox_toload)
+                
+                hydro_box_heads[nBox] = self.head.DataHead.HydroHead.HydroBoxHeads[nBox_toload]
         else:
-            # handle error where file is alive or ftype not specified
-            return -1
+            hydro_box_heads = self.head.DataHead.HydroHead.HydroBoxHeads
         
-        if key_str is None:
-            key_str = key
+        for HydroBoxHead in hydro_box_heads:
+            # ensure HydroBoxHead has local_dims and offset
+            assert HydroBoxHead.head_set
+            
+            ch_hydrobox = ChollaHydroBox(HydroBoxHead, self.head.nSnap)
+            ch_hydrobox.place_data(namebase, dataDir, data_key, arr,
+                                   self.head.DataHead.old_format)
         
-        try:
-            cholla_data[key]
-        except KeyError:
-            err_message = '-- Error --\n'
-            err_message += f'Unable to find {key_str} \n'
-            err_message += f'Missing {key} in snapshot data \n'
-            print(err_message)
-            if raise_keyerr:
-                raise
-    
-    def key_hydrodatacheck(self, key, key_str=None, raise_keyerr=False):
-        self.key_datacheck("hydro", key, key_str=key_str, raise_keyerr=raise_keyerr)
-    
-    def key_partsdatacheck(self, key, key_str=None, raise_keyerr=False):
-        self.key_datacheck("parts", key, key_str=key_str, raise_keyerr=raise_keyerr)
-        
-    def key_gravydatacheck(self, key, key_str=None, raise_keyerr=False):
-        self.key_datacheck("gravy", key, key_str=key_str, raise_keyerr=raise_keyerr)
-    
-    def set_head(self):
-        """
-        set the header with the hydro file
-        """
-        nbox = 0
-        fName = '{0}.{1}.{2}'.format(self.nSnap, self.namebase, nbox)
-        fPath = self.dataDir + '/' + fName
-        fObj_hydro = h5py.File(fPath, 'r')
-        self.head = dict(fObj_hydro.attrs)
-        fObj_hydro.close()
-        self.dims = self.head['dims']
-        
-        # where there are more cells than boxes
-        cells_over_nbox_mask = (self.dims / self.nBoxes)>1 
-        test_modulos = self.dims[cells_over_nbox_mask]
-        # if cells divide evenly into nBoxes, can save dims_loc as attr
-        always_set_locals = False
-        for test_modulo in test_modulos:
-            always_set_locals = (test_modulo % self.nBoxes)>0
+        return arr
 
-        if not always_set_locals:
-            self.dims_loc = self.head['dims_local']
-    
-    ### get file path functions
-    def get_hydro_fPath(self, nbox):
-        fName = '{0}.{1}.{2}'.format(self.nSnap, self.namebase, nbox)
-        return self.dataDir + '/' + fName
-    
-    def get_parts_fPath(self, nbox):
-        fName = '{0}_particles.{1}.{2}'.format(self.nSnap, self.namebase, nbox)
-        return self.dataDir + '/' + fName
-    
-    def get_gravy_fPath(self, nbox):
-        fName = '{0}_gravity.{1}.{2}'.format(self.nSnap, self.namebase, nbox)
-        return self.dataDir + '/' + fName
-    
+    def get_particledata(self, namebase, dataDir, data_key, nBoxes=None):
+        '''
+        Grab and concatenate data onto one large array for the entire simulation
+            box.
+            
+        Args:
+            namebase (str): middle string for data file names
+            dataDir (str): path to the data directory
+            data_key (str): key to access data from hdf5 file
+            nBoxes (list): (optional) list of boxes to load, default is all
+        Returns:
+            arr (arr): array that will hold data information
+        '''
+        assert self.head.DataHead.head_set
+        assert self.head.DataHead.ParticleHead.head_set
         
-    ### loading data functions
-    def load_hydro(self, keys):
-        """
-        load hydro data.
-            use the offset and local dimensions to globally combine them
-        """
-        if self.data_hydro is None:
-            return -1
-        self.hydro_keys = keys
-        for nbox in range(self.nBoxes):
-            fPath = self.get_hydro_fPath(nbox)
-            fObj = h5py.File(fPath, 'r')
-            
-            if self.dims_loc is None:
-                curr_dimsloc = fObj.attrs['dims_local']
-            else:
-                curr_dimsloc = self.dims_loc
-            curr_offset = fObj.attrs['offset']
-            
-            keyStart_x, keyStart_y, keyStart_z = curr_offset
-            keyEnd_x, keyEnd_y, keyEnd_z = curr_offset + curr_dimsloc
-            for key in self.hydro_keys:
-                if nbox == 0:
-                    self.data_hydro[key] = np.zeros(self.dims)
-                curr_keydata = np.array(fObj[key]).reshape(curr_dimsloc)
-                self.data_hydro[key][keyStart_x:keyEnd_x, keyStart_y:keyEnd_y, keyStart_z:keyEnd_z] = curr_keydata
-
-            fObj.close()
-            
-    def load_parts(self, keys):
-        """
-        load particle data.
-            we don't know the number of particles a priori, so we have to load in the data
-            then create a np array of the correct size and index the values in
-        """
-        if self.data_parts is None:
-            return -1
+        # make sure requested data_key is valid
+        assert self.head.DataHead.ParticleHead.check_datakey(data_key)
         
-        self.parts_keys = keys
-        density_bool = False
-        density_key = "density"
-        if density_key in keys:
-            density_bool = True
-            keys.remove(density_key)
-        
-        particle_data_tmp = {}
-        tot_num_parts = 0
-        # arrays that hold cumulative number of particles indexed by nbox
-        keyStarts = np.zeros(self.nBoxes, dtype=int)
-        keyEnds = np.zeros(self.nBoxes, dtype=int)
-        
-        for nbox in range(self.nBoxes):
-            fPath = self.get_parts_fPath(nbox)
-            fObj = h5py.File(fPath, 'r')
-            
-            for k, key in enumerate(keys):
-                # keys can only be 1D arrays of posn and vels
-                if nbox == 0:
-                    # initialize a dynamic array (list) for each key
-                    particle_data_tmp[key] = []
-                
-                ########
-                # may have to change from local to global coord system?
-                curr_keydata = np.array(fObj[key])
-                ########
-                
-                particle_data_tmp[key].append(curr_keydata)
-                
-                if k == 0:
-                    keyStarts[nbox] = tot_num_parts
-                    tot_num_parts += curr_keydata.size
-                    keyEnds[nbox] = tot_num_parts
-            
-            if (density_bool):
-                # density is same as hydro
-                if self.dims_loc is None:
-                    curr_dimsloc = fObj.attrs['dims_local']
-                else:
-                    curr_dimsloc = self.dims_loc
-                curr_offset = fObj.attrs['offset']
-
-                keyStart_x, keyStart_y, keyStart_z = curr_offset
-                keyEnd_x, keyEnd_y, keyEnd_z = curr_offset + curr_dimsloc
-                if nbox == 0:
-                    self.data_parts[density_key] = np.zeros(self.dims)
-                curr_keydata = np.array(fObj[density_key]).reshape(curr_dimsloc)
-                self.data_parts[density_key][keyStart_x:keyEnd_x, keyStart_y:keyEnd_y, keyStart_z:keyEnd_z] = curr_keydata
-
-            fObj.close()
-        
-        
-        for key in keys:
-            ### combine onto one array for each key
-            self.data_parts[key] = np.zeros(tot_num_parts)
-            
-            for nbox in range(self.nBoxes):
-                keyStart, keyEnd = keyStarts[nbox], keyEnds[nbox]
-                self.data_parts[key][keyStart:keyEnd] = particle_data_tmp[key][nbox]
-
-    def load_gravy(self, keys):
-        """
-        load gravity data.
-            very similar to particle loading but for gravity
-            current only key for gravity is 'potential', but I leave it generalized
-            in case future keys are added on to gravity
-        """
-        if self.data_gravy is None:
-            return -1
-        self.gravy_keys = keys
-        
-        gravity_data_tmp = {}
-        tot_num_gravs = 0
-        # arrays that hold cumulative number of particles indexed by nbox
-        keyStarts = np.zeros(self.nBoxes, dtype=int)
-        keyEnds = np.zeros(self.nBoxes, dtype=int)
-        
-        for nbox in range(self.nBoxes):
-            fPath = self.get_gravy_fPath(nbox)
-            fObj = h5py.File(fPath, 'r')
-            
-            for k, key in enumerate(keys):
-                # keys can only be 1D arrays of posn and vels
-                if nbox == 0:
-                    # initialize a dynamic array (list) for each key
-                    gravity_data_tmp[key] = []
-                
-                ########
-                # may have to change from local to global coord system?
-                curr_keydata = np.array(fObj[key])
-                ########
-                
-                gravity_data_tmp[key].append(curr_keydata)
-                
-                if k == 0:
-                    keyStarts[nbox] = tot_num_gravs
-                    tot_num_gravs += curr_keydata.size
-                    keyEnds[nbox] = tot_num_gravs
-
-            fObj.close()
-            
-        for key in keys:
-            ### combine onto one array for each key
-            self.data_gravy[key] = np.zeros(tot_num_gravs)
-            
-            for nbox in range(self.nBoxes):
-                keyStart, keyEnd = keyStarts[nbox], keyEnds[nbox]
-                self.data_gravy[key][keyStart:keyEnd] = gravity_data_tmp[key][nbox]
-    
-    ### concatenate files
-    def concat_files(self, concat_ftype):
-        cholla_type = None
-        fName = None
-        if concat_ftype == "hydro":
-            cholla_type = self.data_hydro
-            fName = '{0}.{1}'.format(self.nSnap, self.namebase)
-        elif concat_ftype == "parts":
-            cholla_type = self.data_parts
-            fName = '{0}_particles.{1}'.format(self.nSnap, self.namebase)
-        elif concat_ftype == "gravy":
-            cholla_type = self.data_gravy
-            fName = '{0}_gravity.{1}'.format(self.nSnap, self.namebase)
+        densityCIC_key = "density"
+        # initialize array
+        if data_key == densityCIC_key:
+            arr = np.zeros(self.head.DataHead.ParticleHead.dims)
         else:
-            # handle error where file is alive or ftype not specified
-            return -1
+            arr = np.zeros(self.head.DataHead.ParticleHead.n_parts_total)
         
-        fPath = self.dataDir + '/' + fName
-        
-        # need to handle OSError Unable to create file (file exists) case
-        with h5py.File(fPath,'x') as fObj:
-            
-            for i, (key, val) in enumerate(self.head.items()):
-                fObj.attrs.create(name=key, data=val, shape=val.shape, dtype=val.dtype)
-            
-            for i, (key, val) in enumerate(cholla_type.items()):
-                fObj.create_dataset(name=key, shape=val.shape, dtype=val.dtype,
-                                    data=val)
-        
-    def concat_hydro(self):
-        self.concat_files("hydro")
-        
-    def concat_parts(self):
-        self.concat_files("parts")
-        
-    def concat_gravy(self):
-        self.concat_files("hydro")
-        
-    
-    def calc_vals(self, cholla_calcs):
-        """
-        cholla_calcs is a list of ChollaValueCalc instances
-        """
-        for k, cholla_calc in enumerate(cholla_calcs):
-            try:
-                cholla_calc.set_reqs(self.data_hydro, self.head)
-            except:
-                print('Unable to set the key requirements for', cholla_calc.calc_fn.__name__)
-
-            req_keys = cholla_calc.reqs
-            try:
-                for key in req_keys:
-                    self.data_hydro[key]
-
-                if cholla_calc.kwarg_fn is not None:
-                    cholla_calc.set_kwargs(self.data_hydro, self.head)
-            except KeyError:
-                print('Unable to run function', cholla_calc.calc_fn.__name__)
-                print('Missing a value from ', cholla_calc.reqs)
-            else:
-                cholla_calc.calculate(self.data_hydro)
+        # create the particle box heads to loop over
+        if nBoxes is not None:
+            particle_box_heads = np.empty(len(nBoxes), dtype=object)
+            for nBox, nBox_toload in enumerate(nBoxes):
+                # make sure requested nBox is valid
+                assert self.head.DataHead.check_nbox(nBox_toload)
                 
-
-class ChollaValueCalc:
-    '''
-    class that makes it easy to determine what is required to calculate that value
-    '''
-
-    def __init__(self, calc_fn, req_fn, kwarg_fn):
-        self.calc_fn = calc_fn
-        self.kwarg_fn = kwarg_fn
-        self.req_fn = req_fn
-        self.kwargs = {}
-
-    def set_reqs(self, data, head):
-        self.reqs = self.req_fn(data, head)
-
-    def set_kwargs(self, data, head):
-        self.kwarg_fn(self.kwargs, data, head)
-
-    def calculate(self, data):
-        self.calc_fn(data, **self.kwargs)
-
-
+                particle_box_heads[nBox] = self.head.DataHead.ParticleHead.ParticleBoxHeads[nBox_toload]
+        else:
+            particle_box_heads = self.head.DataHead.ParticleHead.ParticleBoxHeads
+        
+        for ParticleBoxHead in particle_box_heads:
+            # ensure ParticleBoxHead has local_dims and offset
+            assert ParticleBoxHead.head_set
+            
+            ch_particlebox = ChollaParticleBox(ParticleBoxHead, self.head.nSnap)
+            ch_particlebox.place_data(namebase, dataDir, data_key, arr,
+                                      self.head.DataHead.old_format)
+        
+        return arr
+    
+    def get_densityCIC(self, namebase, dataDir):
+        '''
+        Get particle density cloud-in-cell data
+        
+        Args:
+            namebase (str): middle string for data file names
+            dataDir (str): path to the data directory
+        Returns:
+            (arr): array that will hold density information
+        '''
+        
+        return self.get_particledata(namebase, dataDir, "density")
+    
+    
+    def get_posx(self, namebase, dataDir):
+        '''
+        Get particle x position data
+        
+        Args:
+            namebase (str): middle string for data file names
+            dataDir (str): path to the data directory
+        Returns:
+            (arr): array that will hold x position information
+        '''
+        
+        return self.get_particledata(namebase, dataDir, "pos_x")
+    
+    
+    def get_posy(self, namebase, dataDir):
+        '''
+        Get particle y position data
+        
+        Args:
+            namebase (str): middle string for data file names
+            dataDir (str): path to the data directory
+        Returns:
+            (arr): array that will hold x position information
+        '''
+        
+        return self.get_particledata(namebase, dataDir, "pos_y")
+    
+    def get_posz(self, namebase, dataDir):
+        '''
+        Get particle z position data
+        
+        Args:
+            namebase (str): middle string for data file names
+            dataDir (str): path to the data directory
+        Returns:
+            (arr): array that will hold z position information
+        '''
+        
+        return self.get_particledata(namebase, dataDir, "pos_z")
+    
+    
+    def get_velx(self, namebase, dataDir):
+        '''
+        Get particle x velocity data
+        
+        Args:
+            namebase (str): middle string for data file names
+            dataDir (str): path to the data directory
+        Returns:
+            (arr): array that will hold x velocity information
+        '''
+        
+        return self.get_particledata(namebase, dataDir, "vel_x")
+    
+    
+    def get_vely(self, namebase, dataDir):
+        '''
+        Get particle y velocity data
+        
+        Args:
+            namebase (str): middle string for data file names
+            dataDir (str): path to the data directory
+        Returns:
+            (arr): array that will hold y velocity information
+        '''
+        
+        return self.get_particledata(namebase, dataDir, "vel_y")
+    
+    def get_velz(self, namebase, dataDir):
+        '''
+        Get particle z velocity data
+        
+        Args:
+            namebase (str): middle string for data file names
+            dataDir (str): path to the data directory
+        Returns:
+            (arr): array that will hold z velocity information
+        '''
+        
+        return self.get_particledata(namebase, dataDir, "vel_z")
+    
+    def get_partid(self, namebase, dataDir):
+        '''
+        Get particle id data
+        
+        Args:
+            namebase (str): middle string for data file names
+            dataDir (str): path to the data directory
+        Returns:
+            (arr): array that will hold particle id information
+        '''
+        
+        return self.get_particledata(namebase, dataDir, "particle_IDs")
+    
+    
+    def get_density(self, namebase, dataDir):
+        '''
+        Get hydro density data
+        
+        Args:
+            namebase (str): middle string for data file names
+            dataDir (str): path to the data directory
+        Returns:
+            (arr): array that will hold density information
+        '''
+        
+        return self.get_hydrodata(namebase, dataDir, "density")
+    
+    
+    def get_momentumx(self, namebase, dataDir):
+        '''
+        Get hydro momentum in x-direction data
+        
+        Args:
+            namebase (str): middle string for data file names
+            dataDir (str): path to the data directory
+        Returns:
+            (arr): array that will hold momentum in x-direction information
+        '''
+        
+        return self.get_hydrodata(namebase, dataDir, "momentum_x")
+    
+    def get_momentumy(self, namebase, dataDir):
+        '''
+        Get hydro momentum in y-direction data
+        
+        Args:
+            namebase (str): middle string for data file names
+            dataDir (str): path to the data directory
+        Returns:
+            (arr): array that will hold momentum in y-direction information
+        '''
+        
+        return self.get_hydrodata(namebase, dataDir, "momentum_y")
+    
+    def get_momentumz(self, namebase, dataDir):
+        '''
+        Get hydro momentum in z-direction data
+        
+        Args:
+            namebase (str): middle string for data file names
+            dataDir (str): path to the data directory
+        Returns:
+            (arr): array that will hold momentum in z-direction information
+        '''
+        
+        return self.get_hydrodata(namebase, dataDir, "momentum_z")
+    
+    def get_energy(self, namebase, dataDir):
+        '''
+        Get hydro energy data
+        
+        Args:
+            namebase (str): middle string for data file names
+            dataDir (str): path to the data directory
+        Returns:
+            (arr): array that will hold energy information
+        '''
+        
+        return self.get_hydrodata(namebase, dataDir, "Energy")
+    
+    
+    def get_gasenergy(self, namebase, dataDir):
+        '''
+        Get hydro gas energy data. Only works if Dual Energy formalism was used
+        
+        Args:
+            namebase (str): middle string for data file names
+            dataDir (str): path to the data directory
+        Returns:
+            (arr): array that will hold gas energy information
+        '''
+        
+        return self.get_hydrodata(namebase, dataDir, "GasEnergy")
+    

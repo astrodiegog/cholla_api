@@ -1,162 +1,173 @@
 import numpy as np
-import os
-import glob
-import pathlib
+import h5py
 
+from cholla_api.snap.ChollaSnap import ChollaSnapHead
 from cholla_api.snap.ChollaSnap import ChollaSnap
-from cholla_api.viz.ChollaViz import ChollaViz
-from cholla_api.viz.ChollaVizCompare import ChollaVizCompare
+
+
+
+class ChollaGlobalHead:
+    '''
+    Cholla Global Head object
+        Holds global information regarding the entire simulation run.
+        Initialized with:
+        - dataPath (str): path to the data directory
+        - namebase (str): middle string for data file names
+        - nSnaps (int): total number of snapshots saved
+    
+    Information about the snapshot children are saved in SnapHeads, an ordered
+        array of ChollaSnapHead objects
+    '''
+    
+    def __init__(self, dataPath, namebase, nSnaps):
+        self.dataDir = dataPath
+        self.namebase = namebase
+        self.nSnaps = nSnaps
+        self.SnapHeads = np.empty(nSnaps, dtype=object)
+        self.head_set = False
+        self.snapheads_set = False
+        
+    def set_snapheads(self, nBoxes, particles_flag, cosmo_flag, old_format):
+        '''
+        Populate SnapHeads with ChollaSnapHead objects. Set each SnapHead's 
+            object and its ChollaDataHead's object
+        
+        Args:
+            nBoxes (int): total number of boxes used to run simulation
+            particles_flag (bool): whether particle data was saved
+            cosmo_flag (bool): whether cosmology type was used
+            old_format (bool): whether the old file structure was used
+        Returns:
+            ...
+        '''
+        for nSnap in range(self.nSnaps):
+            self.SnapHeads[nSnap] = ChollaSnapHead(nSnap)
+            if nSnap==0 and cosmo_flag:
+                # file data not well defined for cosmo snap=0
+                continue
+            
+            # use box=0 to set snaphead
+            try:
+                self.SnapHeads[nSnap].set_head(0, self.namebase, self.dataDir,
+                                               particles_flag, cosmo_flag, old_format)
+                try:
+                    self.SnapHeads[nSnap].set_datahead(nBoxes, self.namebase, 
+                                                   self.dataDir, particles_flag, old_format)
+                except OSError:
+                    print(f"Unable to open all {nBoxes:.0f} boxes for snapshot {nSnap:.0f}")
+            except OSError:
+                print(f"Unable to open snapshot {nSnap:.0f}. Setting SnapHead as None.")
+                self.SnapHeads[nSnap] = None
+            
+            
+        self.snapheads_set = True
+    
+    def set_head(self, nSnap=1, nBox=0, all_units=True, particles_flag=False, cosmo_flag=False, old_format=False):
+        '''
+        Set the header attributes for this object. Default use first new snapshot
+            and first box.
+        
+        Args:
+            nSnap (int): (optional) what snapshot number to use
+            nBox (int): (optional) what box number to use
+            all_units (bool): (optional) whether to include all units as attrs
+            particles_flag (bool): (optional) whether particle data was saved
+            cosmo_flag (bool): (optional) whether cosmology type was used
+            old_format (bool): (optional) whether the old file structure was used
+        Returns:
+            ...
+        '''
+        fName = '{0}.{1}.{2}'.format(nSnap, self.namebase, nBox)
+        if old_format:
+            fPath = self.dataDir + '/' + fName
+        else:
+            fPath = self.dataDir + '/' + str(nSnap) + '/' + fName
+        fObj = h5py.File(fPath, 'r')
+                
+        # unit values used to convert from code units to cgs values
+        self.length_unit = fObj.attrs['length_unit']
+        self.mass_unit = fObj.attrs['mass_unit']
+        self.time_unit = fObj.attrs['time_unit']
+        # following values can be reconstructed from previous base units
+        # but can include if wanted :P
+        if all_units:
+            self.density_unit = fObj.attrs['density_unit']
+            self.energy_unit = fObj.attrs['energy_unit']
+            self.velocity_unit = fObj.attrs['velocity_unit']
+        
+        # grab dimensions and domain
+        self.dims = fObj.attrs['dims']
+        self.domain = fObj.attrs['domain']
+        
+        # grab dx + gamma
+        self.dx = fObj.attrs['dx']
+        self.gamma = fObj.attrs['gamma']
+        
+        # grab cosmology params
+        if cosmo_flag:
+            self.H0 = fObj.attrs['H0']
+            self.Omega_L = fObj.attrs['Omega_L']
+            self.Omega_M = fObj.attrs['Omega_M']
+            # Brant Robertson shared the velocity unit conversion
+            self.velocity_unit = 1.0e5 # km to cm
+        fObj.close()
+        
+        # grab particle info
+        if particles_flag:
+            fName = '{0}_particles.{1}.{2}'.format(nSnap, self.namebase, nBox)
+            if old_format:
+                fPath = self.dataDir + '/' + fName
+            else:
+                fPath = self.dataDir + '/' + str(nSnap) + '/' + fName
+            fObj = h5py.File(fPath, 'r')
+            self.paticle_mass_unit = fObj.attrs['particle_mass']
+            fObj.close()
+        
+        self.head_set = True
 
 
 class ChollaRun:
     '''
-    Class that holds important information to manipulate and study a Cholla simulation run
+    Cholla Simulation Run object
+        Holds information related to an entire simulation run. Initialized with
+        - basePath (str): the directory the simulation is held in
+        - nSnaps (int): total number of Snapshots saved
+        - nBoxes (int): total number of boxes used to run simulation
+        - namebase (str): (optional) middle string for the hdf5 data files
+        - particles_flag (bool): (optional) whether particle data was saved
+        - data_subdir (str): (optional) where data is placed within basePath
+        - parts_flag (bool): (optional) whether particle data was saved
+        - DE_flag (bool): (optional) whether dual energy formalism was used
+        - cosmo_flag (bool): (optional) whether cosmology type was used
+        - old_format (bool):(optional) whether the old file structure was used
+        - nSnap_global (int): (optional) which snapshot to set global attributes
+    
     '''
 
-    def __init__(self, basePath, namebase='h5', data_dir='/data', img_dir='/imgs', test_name="", hydro=True, gravy=False, parts=False):
-        self.basePath = basePath
-        self.dataPath = self.basePath + data_dir
-        self.imgsPath = self.basePath + img_dir
-        self.namebase = namebase
-        dirsin_data = next(os.walk(self.dataPath))[1] # pray no more files are in data_dir
-        self.totnSnap = len(dirsin_data)
-        self.nBoxes = len(glob.glob1(self.dataPath + "/0", f"0.{self.namebase}.*"))
-        self.test_name = test_name
+    def __init__(self, basePath, nSnaps, nBoxes, namebase='h5', data_subdir = '/data', parts_flag=False, DE_flag=False, cosmo_flag=False, old_format=False, nSnap_global=1):
+        dataPath = basePath + data_subdir
         
-        self.hydro = hydro
-        self.gravy = gravy
-        self.parts = parts
+        self.DE_flag = DE_flag
+        self.parts_flag = parts_flag
+        self.cosmo_flag = cosmo_flag
+        self.old_format = old_format
         
-
-    def createSnap(self, nSnap, keys={}, load_data=True, snap_head=False, hydro=True, gravy=False, parts=False):
+        self.GlobalHead = ChollaGlobalHead(dataPath, namebase, nSnaps)
+        self.GlobalHead.set_head(nSnap=nSnap_global, particles_flag=parts_flag, 
+                                 cosmo_flag=cosmo_flag, old_format=old_format)
+        
+        self.GlobalHead.set_snapheads(nBoxes, parts_flag, cosmo_flag, old_format)
+        
+    def createSnap(self, nSnap):
         '''
-        creates a ChollaSnap instance
-        params:
+        Lightweight method to create a ChollaSnap object with all keys from a 
+            specific dataset
+        
+        Args:
             nSnap (int): the snapshot number to load
-            keys (dict): dictionary holding list of keys to load from dataset
-            load_data (bool): whether to load the key data or not
-            snap_head (bool): whether to keep the sim head with snapshot, or pass onto ChollaRun class
+        Returns:
+            ch_snap (ChollaSnap): snapshot object
         '''
-        if nSnap > self.totnSnap:
-            print('Invalid snap number')
-            return -1
-        ch_snap = ChollaSnap(nSnap, self.dataPath, self.namebase, self.nBoxes, hydro=hydro, gravy=gravy, parts=parts)
-        ch_snap.set_head() # needed to load in data
-            
-        if load_data:
-            if hydro:
-                ch_snap.load_hydro(keys["hydro"])
-            if gravy:
-                ch_snap.load_gravy(keys["gravy"])
-            if parts:
-                ch_snap.load_parts(keys["parts"])
+        return ChollaSnap(self.GlobalHead.SnapHeads[nSnap])
         
-        if not snap_head:
-            self.head = dict(ch_snap.head)
-            ch_snap.head = None
-        
-        return ch_snap
-
-    def beg_vs_fin(self, keys, imgftype='png', test_name="", valuecalcs=None, plots_type=None, plt_kwargs=None):
-        '''
-        make plot comparing initial vs final conditions
-        '''
-        if plots_type is None:
-            plots_type = ["density", "velocity", "pressure"]
-        if plt_kwargs is None:
-            plt_kwargs = {}
-
-        ch_snap1 = self.createSnap(0, keys=keys, load_data=True, snap_head=True)
-        ch_snap2 = self.createSnap(self.totnSnap-1, keys=keys, load_data=True, snap_head=True)
-
-        if valuecalcs is not None:
-            ch_snap1.calc_vals(valuecalcs)
-            ch_snap2.calc_vals(valuecalcs)
-        
-        ch_comp = ChollaVizCompare(ch_snap1, ch_snap2, test_name=test_name, plt_kwargs=plt_kwargs)
-
-        if ("density" in plots_type):
-            if plt_kwargs.get("save"):
-                imgfout = f"{self.imgsPath}/density_ic.{imgftype}"
-                plt_kwargs["imgfout"] = imgfout
-            ch_comp.density(plt_kwargs)
-         
-        if ("pressure" in plots_type):
-            if plt_kwargs.get("save"):
-                imgfout = f"{self.imgsPath}/pressure_ic.{imgftype}"
-                plt_kwargs["imgfout"] = imgfout
-            ch_comp.pressure(plt_kwargs)
-
-        if ("velocity" in plots_type):
-            if plt_kwargs.get("save"):
-                imgfout = f"{self.imgsPath}/velocity_ic.{imgftype}"
-                plt_kwargs["imgfout"] = imgfout
-            ch_comp.velocity(plt_kwargs)
-
-    
-
-    def make_movie(self, keys, imgfbase="img", imgftype='png', movie_nsnaps=None, valuecalcs=None, plot_vals=None, plt_kwargs=None):
-        '''
-        helper function that loops over each movie_nsnap and saves a figure
-        
-        keys (dict): dictionary holding list of keys to load from dataset
-        imgfbase (str) - prefix to the file name being saved
-        imgftype (str) - file extension
-        movie_nsnaps (arr) - list/arr of snapshot numbers to use
-        valuecalcs (list) - list of chollavalue calcs to use
-        plot_vals (list) - list of values that serve as keys into data structs
-        plt_kwargs (dict) - dictionary of importatnt plotting key word args
-        '''
-        if plot_vals is None:
-            plot_vals = ["density", "velocity", "pressure"]
-        if movie_nsnaps is None:
-            movie_nsnaps = range(self.totnSnap)
-        if plt_kwargs is None:
-            plt_kwargs = {}
-        # number of digits allowed to specify snapshot number
-        fnums = int(np.ceil(np.log10(len(movie_nsnaps))) + 1)
-        
-        # create a progress array tracker
-        progress_arr = np.arange(1,10)*0.1
-        if len(movie_nsnaps) < 10:
-            # less than 10 nsnaps, just look at 30, 50, 80%
-            progress_arr = np.array([0.3, 0.5, 0.8])
-        progress_ind = np.array(progress_arr*len(movie_nsnaps), dtype=int)
-        progress_ind_curr = 0
-        progress_ind_final = progress_arr.size
-            
-        for n, nsnap in enumerate(movie_nsnaps):
-            ch_snap = self.createSnap(nsnap, keys=keys, load_data=True, snap_head=True, hydro=self.hydro, gravy=self.gravy, parts=self.parts)
-            if valuecalcs is not None:
-                ch_snap.calc_vals(valuecalcs)
-            if plt_kwargs.get('save'):
-                fnum_str = str(n).zfill(fnums)
-                img_fname = f"{imgfbase}_{fnum_str}.{imgftype}"
-                
-            ch_viz = ChollaViz(ch_snap, test_name=self.test_name, plt_kwargs=plt_kwargs)
-            
-            for plot_val in plot_vals:
-                if plt_kwargs.get('save'):
-                    curr_plt_dir = f"{self.imgsPath}/{plot_val}"
-                    # make sure plotting directory is there
-                    if not os.path.isdir(curr_plt_dir):
-                        print(f"Creating directory {curr_plt_dir}")
-                        pathlib.Path(curr_plt_dir).mkdir(parents=True, exist_ok=False)
-                        
-                    imgfout = curr_plt_dir + f"/{img_fname}"
-                    plt_kwargs['imgfout'] = imgfout
-                
-                curr_plt_fn = ch_viz.plot_keys[plot_val]
-                curr_plt_fn(plt_kwargs)
-            
-            if (n == progress_ind[progress_ind_curr]):
-                curr_progress = progress_arr[progress_ind_curr]
-                print(f"--- Progress: {curr_progress*100:.0f}% ---")
-                
-                progress_ind_curr += 1
-                if progress_ind_curr >= progress_arr.size:
-                    # done with progress bar stuff
-                    progress_ind_curr = -1
-                
-
 
