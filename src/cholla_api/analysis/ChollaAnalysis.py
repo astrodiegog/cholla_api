@@ -82,9 +82,9 @@ class ChollaAnalysis:
     def stack_projection(self, k_index, k_domain, start, end, arr):
         '''
         Stack the density projection along a k_index 
-            x-projection: k_index = 2
+            x-projection: k_index = 0
             y-projection: k_index = 1
-            z-projection: k_index = 0
+            z-projection: k_index = 2
         
         Using starting and ending domain, place onto an array
         

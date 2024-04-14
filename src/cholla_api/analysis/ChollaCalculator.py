@@ -295,9 +295,9 @@ class ChollaCalculator:
     def densityk_projection(self, density, k_index):
         '''
         Calculate the density projection along some k_index.
-            x-projection: k_index = 0
-            y-projection: k_index = 1
-            z-projection: k_index = 2
+            x-projection (y,z): k_index = 0
+            y-projection (x,z): k_index = 1
+            z-projection (x,y): k_index = 2
         
         Args:
             density (arr): hydrodynamic mass density

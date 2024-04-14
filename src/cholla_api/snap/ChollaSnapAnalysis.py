@@ -5,6 +5,7 @@ from cholla_api.data.ChollaHydroBox import ChollaHydroBox
 from cholla_api.snap.ChollaSnap import ChollaSnap
 from cholla_api.snap.ChollaSnapCalc import ChollaSnapCalc
 from cholla_api.analysis.ChollaAnalysis import ChollaAnalysis
+from cholla_api.analysis.ChollaVizAnalysis import ChollaVizAnalysis
 
 class ChollaSnapAnalysis:
     '''
@@ -75,7 +76,7 @@ class ChollaSnapAnalysis:
         return arr
     
     
-    def loop_xproj_box(self, namebase, dataDir, nBoxes=None):
+    def get_xprojection_loop(self, namebase, dataDir, nBoxes=None):
         '''
         Loop over nBoxes, apply x projection, and place onto larger array using 
             the box's offset
@@ -109,7 +110,7 @@ class ChollaSnapAnalysis:
         
         return arr
     
-    def loop_yproj_box(self, namebase, dataDir, nBoxes=None):
+    def get_yprojection_loop(self, namebase, dataDir, nBoxes=None):
         '''
         Loop over nBoxes, apply y projection, and place onto larger array using 
             the box's offset
@@ -144,7 +145,7 @@ class ChollaSnapAnalysis:
         return arr
     
     
-    def loop_zproj_box(self, namebase, dataDir, nBoxes=None):
+    def get_zprojection_loop(self, namebase, dataDir, nBoxes=None):
         '''
         Loop over nBoxes, apply z projection, and place onto larger array using 
             the box's offset
@@ -200,7 +201,7 @@ class ChollaSnapAnalysis:
     
     def get_phasespace_box(self, namebase, dataDir, gamma, mu, velocity_unit, nBox):
         '''
-        Calculate the phase space for the entire sim box
+        Calculate the phase space for the a specific box
         
         Args:
             namebase (str): middle string for data file names
@@ -215,3 +216,104 @@ class ChollaSnapAnalysis:
                                                                 nBox).flatten()),
                                           np.log10(self.SnapCalc.get_overdensity_box(namebase,
                                                                 dataDir, nBox).flatten()))
+    
+    def get_phasespace_loop(self, namebase, dataDir, gamma, mu, velocity_unit, nBoxes=None):
+        '''
+        Calculate the phase space for the entire sim box by looping over each
+            individual box
+        
+        Args:
+            namebase (str): middle string for data file names
+            dataDir (str): path to the data directory
+            nBoxes (list): (optional) list of boxes to load, default is all
+        Returns:
+            (arr): 2D histogram array of the overdensity-temperature phase space
+        '''
+        
+        # default binning in ChollaAnalysis is (50,50)
+        arr = self.Analysis.create_subarr((49,49))
+        
+        hydro_box_heads = self.set_hboxheads(nBoxes)
+        
+        for HydroBoxHead in hydro_box_heads:
+            # ensure HydroBoxHead has local_dims and offset
+            assert HydroBoxHead.head_set
+            
+            phasespacebox, xedges, yedges = self.get_phasespace_box(namebase, dataDir, 
+                                                                    gamma, mu, 
+                                                                    velocity_unit, 
+                                                                    HydroBoxHead.nBox)
+            
+            arr += phasespacebox
+        
+        return arr, xedges, yedges
+    
+    
+    def plot_cosmo_diagnostic_box(self, namebase, dataDir, gamma, mu, velocity_unit, nBox, show_ticks=True, fname=None):
+        '''
+        Plot the cosmological diagnostic for a specific box. Cosmological 
+            diagnostic is defined in ChollaVizAnalysis
+            
+        Args:
+            namebase (str): middle string for data file names
+            dataDir (str): path to the data directory
+            nBox (int): index of the box to load
+        Returns:
+            ...
+        '''
+        
+        hist, xedges, yedges = self.get_phasespace_box(namebase, dataDir, gamma, 
+                                                       mu, velocity_unit, nBox)
+        
+        # make sure requested nBox is valid
+        assert self.SnapCalc.Snap.head.DataHead.check_nbox(nBox)
+        HydroBoxHead = self.SnapCalc.Snap.head.DataHead.HydroHead.HydroBoxHeads[nBox]
+        
+        chviz_analysis = ChollaVizAnalysis(HydroBoxHead.local_dims, 
+                                           HydroBoxHead.offset)
+        
+        chviz_analysis.cosmo_diagnostic(hist, xedges, yedges, 
+                                        self.SnapCalc.get_xprojection_box(namebase, 
+                                                                          dataDir, nBox),
+                                        self.SnapCalc.get_yprojection_box(namebase, 
+                                                                          dataDir, nBox),
+                                        self.SnapCalc.get_zprojection_box(namebase, 
+                                                                          dataDir, nBox),
+                                        show_ticks=show_ticks, fname=fname)
+        
+        
+    def plot_cosmo_diagnostic(self, namebase, dataDir, gamma, mu, velocity_unit, show_ticks=True, fname=None):
+        '''
+        Plot the cosmological diagnostic for a specific box. Cosmological 
+            diagnostic is defined in ChollaVizAnalysis
+            
+        Args:
+            namebase (str): middle string for data file names
+            dataDir (str): path to the data directory
+            nBox (int): index of the box to load
+        Returns:
+            ...
+        '''
+        
+        print("now inside cosmo diagnostic function")
+        
+        print("starting phase space calculation")
+        hist, xedges, yedges = self.get_phasespace_loop(namebase, dataDir, 
+                                                           gamma, mu, 
+                                                           velocity_unit)
+        print("finished phase space calculation")
+        
+        HydroHead = self.SnapCalc.Snap.head.DataHead.HydroHead
+        
+        # for entire box, offset will just be zeros
+        chviz_analysis = ChollaVizAnalysis(HydroHead.dims, (0.,0.,0.))
+        
+        print("calling cosmo diagnostic function")
+        chviz_analysis.cosmo_diagnostic(hist, xedges, yedges, 
+                                        self.get_xprojection_loop(namebase, 
+                                                                  dataDir),
+                                        self.get_yprojection_loop(namebase, 
+                                                                  dataDir),
+                                        self.get_zprojection_loop(namebase, 
+                                                                  dataDir),
+                                        show_ticks=show_ticks, fname=fname)
