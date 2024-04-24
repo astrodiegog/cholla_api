@@ -104,6 +104,13 @@ class ChollaHydroHead:
         self.HydroBoxHeads = np.empty(nBoxes, dtype=object)
         self.head_set = False
         self.boxheads_set = False
+        self.energy_str = "Energy"
+        self.density_str = "density"
+        self.momx_str = "momentum_x"
+        self.momy_str = "momentum_y"
+        self.momz_str = "momentum_z"
+        self.gasenergy_str = "GasEnergy"
+        
 
     def set_head(self, nSnap, nBox, namebase, dataDir, old_format):
         '''

@@ -169,10 +169,41 @@ class ChollaSnap:
         return ch_particlebox.get_data(namebase, dataDir, data_key, self.head.DataHead.old_format)
     
     
+    def get_hydro_box_heads(self, nBoxes):
+        '''
+        Find all HydroBoxHeads to load given a requested list of box indices. 
+            The purpose of this method is to ensure that any requested nBox is
+            valid to be set
+        
+        Args:
+            nBoxes (list or None): list of boxes to load, None is all
+        Returns:
+            (arr): array that will hold all HydroBoxHeads corresponding to box
+                indices requested
+        '''
+        assert self.head.DataHead.head_set
+        
+        if nBoxes is None:
+            assert self.head.DataHead.HydroHead.head_set
+            assert self.head.DataHead.HydroHead.boxheads_set
+            
+            return self.head.DataHead.HydroHead.HydroBoxHeads
+        else:
+            assert self.head.DataHead.HydroHead.head_set
+            hydro_box_heads = np.empty(len(nBoxes), dtype=object)
+            for nBox, nBox_toload in enumerate(nBoxes):
+                # make sure requested nBox is valid
+                assert self.head.DataHead.check_nbox(nBox_toload)
+                
+                hydro_box_heads[nBox] = self.head.DataHead.HydroHead.HydroBoxHeads[nBox_toload]
+            
+            return hydro_box_heads
+    
     def get_hydrodata(self, namebase, dataDir, data_key, nBoxes=None):
         '''
         Grab and concatenate data onto one large array for the entire simulation
-            box.
+            box. WARNING that entire simulations are usually pretty large and
+            will take up lots of space. Be careful!
             
         Args:
             namebase (str): middle string for data file names
@@ -192,15 +223,18 @@ class ChollaSnap:
         arr = np.zeros(self.head.DataHead.HydroHead.dims)
         
         # create the hydro box heads to loop over
-        if nBoxes is not None:
+        if nBoxes is None:
+            assert self.head.DataHead.HydroHead.boxheads_set
+            
+            hydro_box_heads = self.head.DataHead.HydroHead.HydroBoxHeads
+        else:
             hydro_box_heads = np.empty(len(nBoxes), dtype=object)
             for nBox, nBox_toload in enumerate(nBoxes):
                 # make sure requested nBox is valid
                 assert self.head.DataHead.check_nbox(nBox_toload)
                 
                 hydro_box_heads[nBox] = self.head.DataHead.HydroHead.HydroBoxHeads[nBox_toload]
-        else:
-            hydro_box_heads = self.head.DataHead.HydroHead.HydroBoxHeads
+            
         
         for HydroBoxHead in hydro_box_heads:
             # ensure HydroBoxHead has local_dims and offset

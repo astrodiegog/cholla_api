@@ -1,4 +1,7 @@
 from cholla_api.snap.ChollaSnap import ChollaSnap
+
+from cholla_api.data.ChollaHydroBox import ChollaHydroBox
+
 from cholla_api.analysis.ChollaCalculator import ChollaCalculator
 
 
@@ -9,8 +12,11 @@ class ChollaSnapCalc:
             ChollaCalculator for some given SnapHead
         
         Will have two types of methods: get_calc and get_calcbox that allows
-            user to create a calculation either on a specific box or on for the
-            entire sim global domain
+            user to create a calculation either on a specific box or on the
+            entire sim global domain. get_calc methods will call 
+            self.Snap.get_hydrodata which creates large arrays, so use with
+            caution. get_calcbox will create a databox object and use its
+            get_data method
     
     TODO:
         once I have a method in ChollaSnap to load data within a subvolume,
@@ -25,7 +31,8 @@ class ChollaSnapCalc:
     
     def get_vmag(self, namebase, dataDir, nBoxes=None):
         '''
-        Calculate the hydro velocity magnitude for the entire sim box
+        Calculate the hydro velocity magnitude for each requested nBox inside of
+            nBoxes, and concatenate onto a global array for the entire sim.
         
         Args:
             namebase (str): middle string for data file names
@@ -35,14 +42,40 @@ class ChollaSnapCalc:
             (arr): array of the velocity magnitude
         '''
         
-        return self.Calc.velmag(self.Snap.get_hydrodata(namebase, dataDir, 
-                                                        "density", nBoxes),
-                                self.Snap.get_hydrodata(namebase, dataDir, 
-                                                        "momentum_x", nBoxes),
-                                self.Snap.get_hydrodata(namebase, dataDir, 
-                                                        "momentum_y", nBoxes),
-                                self.Snap.get_hydrodata(namebase, dataDir, 
-                                                        "momentum_z", nBoxes))
+        assert self.Snap.head.DataHead.head_set
+        assert self.Snap.head.DataHead.HydroHead.head_set
+        
+        # grab info needed to load in data
+        density_str = self.Snap.head.DataHead.HydroHead.density_str
+        momx_str = self.Snap.head.DataHead.HydroHead.momx_str
+        momy_str = self.Snap.head.DataHead.HydroHead.momy_str
+        momz_str = self.Snap.head.DataHead.HydroHead.momz_str
+        old_format = self.Snap.head.DataHead.old_format
+        
+        # grab info needed to create ChollaHydroBoxes
+        nsnap = self.Snap.head.nSnap
+        
+        # grab requested hydro box heads + ensure they have local_dims + offset
+        hydro_box_heads = self.Snap.get_hydro_box_heads(nBoxes)
+        
+        # create global velocity magnitude array
+        vmag_global = self.Calc.create_arr()
+        
+        for box_head in hydro_box_heads:
+            # create a box + calculator object
+            box = ChollaHydroBox(box_head, nsnap)
+            box_calc = ChollaCalculator(box_head.local_dims)
+            
+            density_box = box.get_data(namebase, dataDir, density_str, 
+                                       old_format)
+            momx_box = box.get_data(namebase, dataDir, momx_str, old_format)
+            momy_box = box.get_data(namebase, dataDir, momy_str, old_format)
+            momz_box = box.get_data(namebase, dataDir, momz_str, old_format)
+            
+            vmag_box = box_calc.velmag(density_box, momx_box, momy_box, momz_box)
+            box.place_anydata(vmag_box, vmag_global)
+            
+        return vmag_global
     
     def get_vmag_box(self, namebase, dataDir, nBox):
         '''
@@ -51,27 +84,38 @@ class ChollaSnapCalc:
         Args:
             namebase (str): middle string for data file names
             dataDir (str): path to the data directory
-            data_key (str): key to access data from hdf5 file
             nBox (int): index of the box to load
         Returns:
             (arr): array of the velocity magnitude
         '''
         
-        HydroBoxHead = self.Snap.head.DataHead.HydroHead.HydroBoxHeads[nBox]
+        assert self.Snap.head.DataHead.head_set
+        assert self.Snap.head.DataHead.check_nbox(nBox)
+        assert self.Snap.head.DataHead.HydroHead.head_set
+        
+        # grab info needed to load in data
+        density_str = self.Snap.head.DataHead.HydroHead.density_str
+        momx_str = self.Snap.head.DataHead.HydroHead.momx_str
+        momy_str = self.Snap.head.DataHead.HydroHead.momy_str
+        momz_str = self.Snap.head.DataHead.HydroHead.momz_str
+        old_format = self.Snap.head.DataHead.old_format
+        
+        # grab hydro box head
+        hbox_head = self.Snap.head.DataHead.HydroHead.HydroBoxHeads[nBox]
         
         # ensure HydroBoxHead has local_dims before creating new calculator
-        assert HydroBoxHead.head_set
+        assert hbox_head.head_set
+        box = ChollaHydroBox(hbox_head, self.Snap.head.nSnap)
+        box_calc = ChollaCalculator(hbox_head.local_dims)
         
-        newCalc = ChollaCalculator(HydroBoxHead.local_dims)
-        
-        return newCalc.velmag(self.Snap.get_hydroboxdata(namebase, dataDir, 
-                                                         "density", nBox),
-                              self.Snap.get_hydroboxdata(namebase, dataDir, 
-                                                         "momentum_x", nBox),
-                              self.Snap.get_hydroboxdata(namebase, dataDir, 
-                                                         "momentum_y", nBox),
-                              self.Snap.get_hydroboxdata(namebase, dataDir, 
-                                                         "momentum_z", nBox))
+        return box_calc.velmag(box.get_data(namebase, dataDir, density_str, 
+                                            old_format),
+                               box.get_data(namebase, dataDir, momx_str, 
+                                            old_format),
+                               box.get_data(namebase, dataDir, momy_str, 
+                                            old_format),
+                               box.get_data(namebase, dataDir, momz_str, 
+                                            old_format))
     
     def get_pressure(self, namebase, dataDir, gamma, DE_flag, nBoxes=None):
         '''
@@ -87,22 +131,64 @@ class ChollaSnapCalc:
             (arr): array of the pressure
         '''
         
-        if DE_flag:
-            return self.Calc.pressure_DE(self.Snap.get_hydrodata(namebase, dataDir, 
-                                                                 "GasEnergy", nBoxes), 
-                                         gamma)
+        assert self.Snap.head.DataHead.head_set
+        assert self.Snap.head.DataHead.HydroHead.head_set
+        
+        # grab info needed to create ChollaHydroBoxes
+        nsnap = self.Snap.head.nSnap
+        
+        # grab requested hydro box heads + ensure they have local_dims + offset
+        hydro_box_heads = self.Snap.get_hydro_box_heads(nBoxes)
+        
+        # create global pressure array
+        press_global = self.Calc.create_arr()
+        
+        # grab info needed to load in data
+        old_format = self.Snap.head.DataHead.old_format
+        
+        if DE_flag:           
+            # grab info needed to load in data
+            gasenergy_str = self.Snap.head.DataHead.HydroHead.gasenergy_str
+            
+            for box_head in hydro_box_heads:
+                # create a box + calculator object
+                box = ChollaHydroBox(box_head, nsnap)
+                box_calc = ChollaCalculator(box_head.local_dims)
+
+                gasenergy_box = box.get_data(namebase, dataDir, gasenergy_str, 
+                                             old_format)
+                
+                pressure_box = box_calc.pressure_DE(gasenergy_box, gamma)
+                box.place_anydata(pressure_box, press_global)
+                
         else:
-            return self.Calc.pressure_noDE(self.Snap.get_hydrodata(namebase, dataDir, 
-                                                                   "Energy", nBoxes),
-                                           self.Snap.get_hydrodata(namebase, dataDir, 
-                                                                   "density", nBoxes),
-                                           self.Snap.get_hydrodata(namebase, dataDir, 
-                                                                   "momentum_x", nBoxes),
-                                           self.Snap.get_hydrodata(namebase, dataDir, 
-                                                                   "momentum_y", nBoxes),
-                                           self.Snap.get_hydrodata(namebase, dataDir, 
-                                                                   "momentum_z", nBoxes),
-                                           gamma)
+            # grab info needed to load in data
+            energy_str = self.Snap.head.DataHead.HydroHead.energy_str
+            density_str = self.Snap.head.DataHead.HydroHead.density_str
+            momx_str = self.Snap.head.DataHead.HydroHead.momx_str
+            momy_str = self.Snap.head.DataHead.HydroHead.momy_str
+            momz_str = self.Snap.head.DataHead.HydroHead.momz_str
+            
+            for box_head in hydro_box_heads:
+                # create a box + calculator object
+                box = ChollaHydroBox(box_head, nsnap)
+                box_calc = ChollaCalculator(box_head.local_dims)
+
+                energy_box = box.get_data(namebase, dataDir, energy_str, 
+                                          old_format)
+                density_box = box.get_data(namebase, dataDir, density_str, 
+                                           old_format)
+                momx_box = box.get_data(namebase, dataDir, momx_str, old_format)
+                momy_box = box.get_data(namebase, dataDir, momy_str, old_format)
+                momz_box = box.get_data(namebase, dataDir, momz_str, old_format)
+                
+                pressure_box = box_calc.pressure_noDE(energy_box, density_box, 
+                                                      momx_box, momy_box, 
+                                                      momz_box, gamma)
+                
+                box.place_anydata(pressure_box, press_global)
+            
+        return press_global
         
     def get_pressure_box(self, namebase, dataDir, gamma, DE_flag, nBox):
         '''
@@ -118,30 +204,50 @@ class ChollaSnapCalc:
             (arr): array of the pressure
         '''
         
-        HydroBoxHead = self.Snap.head.DataHead.HydroHead.HydroBoxHeads[nBox]
+        assert self.Snap.head.DataHead.head_set
+        assert self.Snap.head.DataHead.check_nbox(nBox)
+        assert self.Snap.head.DataHead.HydroHead.head_set
+        
+        # grab info needed to load in data
+        old_format = self.Snap.head.DataHead.old_format
+        
+        # grab hydro box head
+        hbox_head = self.Snap.head.DataHead.HydroHead.HydroBoxHeads[nBox]
         
         # ensure HydroBoxHead has local_dims before creating new calculator
-        assert HydroBoxHead.head_set
-        
-        newCalc = ChollaCalculator(HydroBoxHead.local_dims)
+        assert hbox_head.head_set
+        box = ChollaHydroBox(hbox_head, self.Snap.head.nSnap)
+        box_calc = ChollaCalculator(hbox_head.local_dims)
         
         if DE_flag:
-            return newCalc.pressure_DE(self.Snap.get_hydroboxdata(namebase, dataDir, 
-                                                                  "GasEnergy", nBox),
-                                       gamma)
-        else:
-            return newCalc.pressure_noDE(self.Snap.get_hydroboxdata(namebase, dataDir, 
-                                                                    "Energy", nBox),
-                                         self.Snap.get_hydroboxdata(namebase, dataDir, 
-                                                                    "density", nBox),
-                                         self.Snap.get_hydroboxdata(namebase, dataDir, 
-                                                                    "momentum_x", nBox),
-                                         self.Snap.get_hydroboxdata(namebase, dataDir, 
-                                                                    "momentum_y", nBox),
-                                         self.Snap.get_hydroboxdata(namebase, dataDir, 
-                                                                    "momentum_z", nBox),
-                                         gamma)
+            # grab info needed to load in data
+            gasenergy_str = self.Snap.head.DataHead.HydroHead.gasenergy_str
+            
+            return box_calc.pressure_DE(box.get_data(namebase, dataDir, 
+                                                     gasenergy_str, old_format), 
+                                        gamma)
         
+        else:
+            # grab info needed to load in data
+            energy_str = self.Snap.head.DataHead.HydroHead.energy_str
+            density_str = self.Snap.head.DataHead.HydroHead.density_str
+            momx_str = self.Snap.head.DataHead.HydroHead.momx_str
+            momy_str = self.Snap.head.DataHead.HydroHead.momy_str
+            momz_str = self.Snap.head.DataHead.HydroHead.momz_str
+            
+            return box_calc.pressure_noDE(box.get_data(namebase, dataDir, 
+                                                       energy_str, old_format),
+                                          box.get_data(namebase, dataDir, 
+                                                       density_str, old_format),
+                                          box.get_data(namebase, dataDir, 
+                                                       momx_str, old_format),
+                                          box.get_data(namebase, dataDir, 
+                                                       momy_str, old_format),
+                                          box.get_data(namebase, dataDir, 
+                                                       momz_str, old_format),
+                                          gamma)
+    
+    
     def get_intenergy(self, namebase, dataDir, DE_flag, nBoxes=None):
         '''
         Calculate the specific internal energy for the entire sim box
@@ -155,23 +261,70 @@ class ChollaSnapCalc:
             (arr): array of the internal energy
         '''
         
-        if DE_flag:
-            return self.Calc.intenergy_DE(self.Snap.get_hydrodata(namebase, dataDir, 
-                                                                 "GasEnergy", nBoxes),
-                                          self.Snap.get_hydrodata(namebase, dataDir, 
-                                                                 "density", nBoxes))
-        else:
-            return self.Calc.intenergy_noDE(self.Snap.get_hydrodata(namebase, dataDir, 
-                                                                   "Energy", nBoxes),
-                                           self.Snap.get_hydrodata(namebase, dataDir, 
-                                                                   "density", nBoxes),
-                                           self.Snap.get_hydrodata(namebase, dataDir, 
-                                                                   "momentum_x", nBoxes),
-                                           self.Snap.get_hydrodata(namebase, dataDir, 
-                                                                   "momentum_y", nBoxes),
-                                           self.Snap.get_hydrodata(namebase, dataDir, 
-                                                                   "momentum_z", nBoxes))
+        assert self.Snap.head.DataHead.head_set
+        assert self.Snap.head.DataHead.HydroHead.head_set
+        
+        # grab info needed to create ChollaHydroBoxes
+        nsnap = self.Snap.head.nSnap
+        
+        # grab requested hydro box heads + ensure they have local_dims + offset
+        hydro_box_heads = self.Snap.get_hydro_box_heads(nBoxes)
+        
+        # create global internal energy arrays
+        intenergy_global = self.Calc.create_arr()
+        
+        # grab info needed to load in data
+        old_format = self.Snap.head.DataHead.old_format
+        
+        if DE_flag:           
+            # grab info needed to load in data
+            gasenergy_str = self.Snap.head.DataHead.HydroHead.gasenergy_str
+            density_str = self.Snap.head.DataHead.HydroHead.density_str
+            
+            for box_head in hydro_box_heads:
+                # create a box + calculator object
+                box = ChollaHydroBox(box_head, nsnap)
+                box_calc = ChollaCalculator(box_head.local_dims)
 
+                gasenergy_box = box.get_data(namebase, dataDir, gasenergy_str, 
+                                             old_format)
+                density_box = box.get_data(namebase, dataDir, density_str, 
+                                           old_format)
+                
+                intenergy_box = box_calc.intenergy_DE(gasenergy_box, 
+                                                      density_box, gamma)
+                box.place_anydata(intenergy_box, intenergy_global)
+                
+        else:
+            # grab info needed to load in data
+            energy_str = self.Snap.head.DataHead.HydroHead.energy_str
+            density_str = self.Snap.head.DataHead.HydroHead.density_str
+            momx_str = self.Snap.head.DataHead.HydroHead.momx_str
+            momy_str = self.Snap.head.DataHead.HydroHead.momy_str
+            momz_str = self.Snap.head.DataHead.HydroHead.momz_str
+            
+            for box_head in hydro_box_heads:
+                # create a box + calculator object
+                box = ChollaHydroBox(box_head, nsnap)
+                box_calc = ChollaCalculator(box_head.local_dims)
+
+                energy_box = box.get_data(namebase, dataDir, energy_str, 
+                                          old_format)
+                density_box = box.get_data(namebase, dataDir, density_str, 
+                                           old_format)
+                momx_box = box.get_data(namebase, dataDir, momx_str, old_format)
+                momy_box = box.get_data(namebase, dataDir, momy_str, old_format)
+                momz_box = box.get_data(namebase, dataDir, momz_str, old_format)
+                
+                intenergy_box = box_calc.intenergy_noDE(energy_box, density_box, 
+                                                       momx_box, momy_box, 
+                                                       momz_box, gamma)
+                
+                box.place_anydata(intenergy_box, intenergy_global)
+            
+        return intenergy_global
+    
+    
     def get_intenergy_box(self, namebase, dataDir, DE_flag, nBox):
         '''
         Calculate the specific internal energy for a subvolume box
@@ -185,30 +338,54 @@ class ChollaSnapCalc:
             (arr): array of the internal energy
         '''
         
-        HydroBoxHead = self.Snap.head.DataHead.HydroHead.HydroBoxHeads[nBox]
+        assert self.Snap.head.DataHead.head_set
+        assert self.Snap.head.DataHead.check_nbox(nBox)
+        assert self.Snap.head.DataHead.HydroHead.head_set
+        
+        # grab info needed to load in data
+        old_format = self.Snap.head.DataHead.old_format
+        
+        # grab hydro box head
+        hbox_head = self.Snap.head.DataHead.HydroHead.HydroBoxHeads[nBox]
         
         # ensure HydroBoxHead has local_dims before creating new calculator
-        assert HydroBoxHead.head_set
-        
-        newCalc = ChollaCalculator(HydroBoxHead.local_dims)
+        assert hbox_head.head_set
+        box = ChollaHydroBox(hbox_head, self.Snap.head.nSnap)
+        box_calc = ChollaCalculator(hbox_head.local_dims)
         
         if DE_flag:
-            return newCalc.intenergy_DE(self.Snap.get_hydroboxdata(namebase, dataDir, 
-                                                                   "GasEnergy", nBox),
-                                        self.Snap.get_hydroboxdata(namebase, dataDir, 
-                                                                   "density", nBox))
-        else:
-            return newCalc.intenergy_noDE(self.Snap.get_hydroboxdata(namebase, dataDir, 
-                                                                     "Energy", nBox),
-                                          self.Snap.get_hydroboxdata(namebase, dataDir, 
-                                                                     "density", nBox),
-                                          self.Snap.get_hydroboxdata(namebase, dataDir, 
-                                                                     "momentum_x", nBox),
-                                          self.Snap.get_hydroboxdata(namebase, dataDir, 
-                                                                     "momentum_y", nBox),
-                                          self.Snap.get_hydroboxdata(namebase, dataDir, 
-                                                                     "momentum_z", nBox))
+            # grab info needed to load in data
+            gasenergy_str = self.Snap.head.DataHead.HydroHead.gasenergy_str
+            density_str = self.Snap.head.DataHead.HydroHead.density_str
+            
+            return box_calc.intenergy_DE(box.get_data(namebase, dataDir, 
+                                                      gasenergy_str, old_format), 
+                                         box.get_data(namebase, dataDir, 
+                                                      density_str, old_format),
+                                         gamma)
         
+        else:
+            # grab info needed to load in data
+            energy_str = self.Snap.head.DataHead.HydroHead.energy_str
+            density_str = self.Snap.head.DataHead.HydroHead.density_str
+            momx_str = self.Snap.head.DataHead.HydroHead.momx_str
+            momy_str = self.Snap.head.DataHead.HydroHead.momy_str
+            momz_str = self.Snap.head.DataHead.HydroHead.momz_str
+            
+            return box_calc.intenergy_noDE(box.get_data(namebase, dataDir, 
+                                                        energy_str, old_format),
+                                           box.get_data(namebase, dataDir, 
+                                                        density_str, old_format),
+                                           box.get_data(namebase, dataDir, 
+                                                        momx_str, old_format),
+                                           box.get_data(namebase, dataDir, 
+                                                        momy_str, old_format),
+                                           box.get_data(namebase, dataDir, 
+                                                        momz_str, old_format),
+                                           gamma)
+    
+    
+    
     def get_gastemp(self, namebase, dataDir, gamma, mu, velocity_unit, nBoxes=None):
         '''
         Calculate the temperature of the gas for the entire sim box
@@ -224,11 +401,39 @@ class ChollaSnapCalc:
             (arr): array of the temperature
         '''
         
-        return self.Calc.gas_temp(self.Snap.get_hydrodata(namebase, dataDir, 
-                                                          "GasEnergy", nBoxes),
-                                  self.Snap.get_hydrodata(namebase, dataDir, 
-                                                          "density", nBoxes), 
-                                  gamma, mu, velocity_unit)
+        assert self.Snap.head.DataHead.head_set
+        assert self.Snap.head.DataHead.HydroHead.head_set
+        
+        # grab info needed to create ChollaHydroBoxes
+        nsnap = self.Snap.head.nSnap
+        
+        # grab requested hydro box heads + ensure they have local_dims + offset
+        hydro_box_heads = self.Snap.get_hydro_box_heads(nBoxes)
+        
+        # create global gas temperature arrays
+        gastemp_global = self.Calc.create_arr()
+        
+        # grab info needed to load in data
+        gasenergy_str = self.Snap.head.DataHead.HydroHead.gasenergy_str
+        density_str = self.Snap.head.DataHead.HydroHead.density_str
+        old_format = self.Snap.head.DataHead.old_format
+
+        for box_head in hydro_box_heads:
+            # create a box + calculator object
+            box = ChollaHydroBox(box_head, nsnap)
+            box_calc = ChollaCalculator(box_head.local_dims)
+
+            gasenergy_box = box.get_data(namebase, dataDir, gasenergy_str, 
+                                         old_format)
+            density_box = box.get_data(namebase, dataDir, density_str, 
+                                       old_format)
+
+            gastemp_box = box_calc.gas_temp(gasenergy_box, density_box, gamma, 
+                                            mu, velocity_unit)
+            box.place_anydata(gastemp_box, gastemp_global)
+            
+        return gastemp_global
+    
     
     def get_gastemp_box(self, namebase, dataDir, gamma, mu, velocity_unit, nBox):
         '''
@@ -245,18 +450,30 @@ class ChollaSnapCalc:
             (arr): array of the temperature
         '''
         
-        HydroBoxHead = self.Snap.head.DataHead.HydroHead.HydroBoxHeads[nBox]
+        assert self.Snap.head.DataHead.head_set
+        assert self.Snap.head.DataHead.check_nbox(nBox)
+        assert self.Snap.head.DataHead.HydroHead.head_set
+        
+        # grab hydro box head
+        hbox_head = self.Snap.head.DataHead.HydroHead.HydroBoxHeads[nBox]
         
         # ensure HydroBoxHead has local_dims before creating new calculator
-        assert HydroBoxHead.head_set
+        assert hbox_head.head_set
+        box = ChollaHydroBox(hbox_head, self.Snap.head.nSnap)
+        box_calc = ChollaCalculator(hbox_head.local_dims)
         
-        newCalc = ChollaCalculator(HydroBoxHead.local_dims)
-        
-        return newCalc.gas_temp(self.Snap.get_hydroboxdata(namebase, dataDir, 
-                                                           "GasEnergy", nBox),
-                                self.Snap.get_hydroboxdata(namebase, dataDir, 
-                                                           "density", nBox), 
-                                gamma, mu, velocity_unit)
+        # grab info needed to load in data
+        gasenergy_str = self.Snap.head.DataHead.HydroHead.gasenergy_str
+        density_str = self.Snap.head.DataHead.HydroHead.density_str
+        old_format = self.Snap.head.DataHead.old_format
+
+        return box_calc.gas_temp(box.get_data(namebase, dataDir, gasenergy_str, 
+                                              old_format), 
+                                 box.get_data(namebase, dataDir, density_str, 
+                                              old_format),
+                                 gamma, mu, velocity_unit)
+    
+    
         
     def get_overdensity(self, namebase, dataDir, nBoxes=None):
         '''
@@ -270,10 +487,36 @@ class ChollaSnapCalc:
         Returns:
             (arr): 2D array of the overdensity
         '''
+        assert self.Snap.head.DataHead.head_set
+        assert self.Snap.head.DataHead.HydroHead.head_set
         
-        return self.Calc.overdensity_median(self.Snap.get_hydrodata(namebase, dataDir, 
-                                                                    "density", nBoxes))
-    
+        # grab info needed to create ChollaHydroBoxes
+        nsnap = self.Snap.head.nSnap
+        
+        # grab requested hydro box heads + ensure they have local_dims + offset
+        hydro_box_heads = self.Snap.get_hydro_box_heads(nBoxes)
+        
+        # create global overdensity arrays
+        overdensity_global = self.Calc.create_arr()
+        
+        # grab info needed to load in data
+        density_str = self.Snap.head.DataHead.HydroHead.density_str
+        old_format = self.Snap.head.DataHead.old_format
+
+        for box_head in hydro_box_heads:
+            # create a box + calculator object
+            box = ChollaHydroBox(box_head, nsnap)
+            box_calc = ChollaCalculator(box_head.local_dims)
+
+            density_box = box.get_data(namebase, dataDir, density_str, 
+                                       old_format)
+
+            overdensity_box = box_calc.overdensity_median(density_box)
+            box.place_anydata(overdensity_box, overdensity_global)
+            
+        return overdensity_global
+        
+        
     def get_overdensity_box(self, namebase, dataDir, nBox):
         '''
         Calculate the overdensity (density normalized by median) for a subvolume 
@@ -286,33 +529,76 @@ class ChollaSnapCalc:
         Returns:
             (arr): 2D array of the overdensity
         '''
+        assert self.Snap.head.DataHead.head_set
+        assert self.Snap.head.DataHead.check_nbox(nBox)
+        assert self.Snap.head.DataHead.HydroHead.head_set
         
-        HydroBoxHead = self.Snap.head.DataHead.HydroHead.HydroBoxHeads[nBox]
+        # grab hydro box head
+        hbox_head = self.Snap.head.DataHead.HydroHead.HydroBoxHeads[nBox]
         
         # ensure HydroBoxHead has local_dims before creating new calculator
-        assert HydroBoxHead.head_set
+        assert hbox_head.head_set
+        box = ChollaHydroBox(hbox_head, self.Snap.head.nSnap)
+        box_calc = ChollaCalculator(hbox_head.local_dims)
         
-        newCalc = ChollaCalculator(HydroBoxHead.local_dims)
-        
-        return newCalc.overdensity_median(self.Snap.get_hydroboxdata(namebase, dataDir, 
-                                                                     "density", nBox))
+        # grab info needed to load in data
+        density_str = self.Snap.head.DataHead.HydroHead.density_str
+        old_format = self.Snap.head.DataHead.old_format
+
+        return box_calc.overdensity_median(box.get_data(namebase, dataDir, density_str, 
+                                                        old_format))
         
         
     def get_xprojection(self, namebase, dataDir, nBoxes=None):
         '''
-        Calculate the x-projected density for the entire sim box
+        Calculate the x-projected density for the entire sim box. Loop over 
+            nBoxes, apply x projection, and place onto larger array using the 
+            box's offset
         
         Args:
             namebase (str): middle string for data file names
             dataDir (str): path to the data directory
             nBoxes (list): (optional) list of boxes to load, default is all
         Returns:
-            (arr): 2D array of the projected density
+            ...
         '''
         
-        return self.Calc.densityk_projection(self.Snap.get_hydrodata(namebase, dataDir, 
-                                                                     "density", nBoxes),
-                                             0)
+        assert self.Snap.head.DataHead.head_set
+        assert self.Snap.head.DataHead.HydroHead.head_set
+        
+        new_dims = (self.Snap.head.DataHead.HydroHead.dims[1], 
+                    self.Snap.head.DataHead.HydroHead.dims[2])
+        
+        # create global array
+        xproj_global = self.Calc.create_subarr(new_dims)
+        
+        # grab info needed to load in data
+        density_str = self.Snap.head.DataHead.HydroHead.density_str
+        old_format = self.Snap.head.DataHead.old_format
+        
+        # grab info needed to create ChollaHydroBoxes
+        nsnap = self.Snap.head.nSnap
+        
+        # grab requested hydro box heads + ensure they have local_dims + offset
+        hydro_box_heads = self.Snap.get_hydro_box_heads(nBoxes)
+        
+        for box_head in hydro_box_heads:
+            # create a box + calculator object
+            box = ChollaHydroBox(box_head, nsnap)
+            box_calc = ChollaCalculator(box_head.local_dims)
+            
+            # x projection is with k_index = 0
+            xproj_box = box_calc.densityk_projection(box.get_data(namebase, dataDir, 
+                                                                  density_str, 
+                                                                  old_format), 0)
+            
+            startX, startY, startZ = box_head.offset
+            localX, localY, localZ = box_head.local_dims
+            endX, endY, endZ = startX + localX, startY + localY, startZ + localZ
+            
+            xproj_global[startY:endY, startZ:endZ] += xproj_box
+        
+        return xproj_global
     
     def get_xprojection_box(self, namebase, dataDir, nBox):
         '''
@@ -323,35 +609,79 @@ class ChollaSnapCalc:
             dataDir (str): path to the data directory
             nBoxes (list): (optional) list of boxes to load, default is all
         Returns:
-            (arr): 2D array of the projected density
+            ...
         '''
+        assert self.Snap.head.DataHead.head_set
+        assert self.Snap.head.DataHead.check_nbox(nBox)
+        assert self.Snap.head.DataHead.HydroHead.head_set
         
-        HydroBoxHead = self.Snap.head.DataHead.HydroHead.HydroBoxHeads[nBox]
+        # grab info needed to load in data
+        density_str = self.Snap.head.DataHead.HydroHead.density_str
+        old_format = self.Snap.head.DataHead.old_format
+        
+        # grab hydro box head
+        hbox_head = self.Snap.head.DataHead.HydroHead.HydroBoxHeads[nBox]
         
         # ensure HydroBoxHead has local_dims before creating new calculator
-        assert HydroBoxHead.head_set
+        assert hbox_head.head_set
+        box = ChollaHydroBox(hbox_head, self.Snap.head.nSnap)
+        box_calc = ChollaCalculator(hbox_head.local_dims)
         
-        newCalc = ChollaCalculator(HydroBoxHead.local_dims)
-        
-        return newCalc.densityk_projection(self.Snap.get_hydroboxdata(namebase, dataDir, 
-                                                                      "density", nBox),
-                                             0)
+        # x projection is with k_index = 0
+        return box_calc.densityk_projection(box.get_data(namebase, dataDir, 
+                                                         density_str, 
+                                                         old_format), 0)
     
     def get_yprojection(self, namebase, dataDir, nBoxes=None):
         '''
-        Calculate the y-projected density for the entire sim box
+        Calculate the y-projected density for the entire sim box. Loop over 
+            nBoxes, apply y projection, and place onto larger array using the 
+            box's offset
         
         Args:
             namebase (str): middle string for data file names
             dataDir (str): path to the data directory
             nBoxes (list): (optional) list of boxes to load, default is all
         Returns:
-            (arr): 2D array of the projected density
+            ...
         '''
         
-        return self.Calc.densityk_projection(self.Snap.get_hydrodata(namebase, dataDir, 
-                                                                     "density", nBoxes),
-                                             1)
+        assert self.Snap.head.DataHead.head_set
+        assert self.Snap.head.DataHead.HydroHead.head_set
+        
+        new_dims = (self.Snap.head.DataHead.HydroHead.dims[0], 
+                    self.Snap.head.DataHead.HydroHead.dims[2])
+        
+        # create global array
+        yproj_global = self.Calc.create_subarr(new_dims)
+        
+        # grab info needed to load in data
+        density_str = self.Snap.head.DataHead.HydroHead.density_str
+        old_format = self.Snap.head.DataHead.old_format
+        
+        # grab info needed to create ChollaHydroBoxes
+        nsnap = self.Snap.head.nSnap
+        
+        # grab requested hydro box heads + ensure they have local_dims + offset
+        hydro_box_heads = self.Snap.get_hydro_box_heads(nBoxes)
+        
+        for box_head in hydro_box_heads:
+            # create a box + calculator object
+            box = ChollaHydroBox(box_head, nsnap)
+            box_calc = ChollaCalculator(box_head.local_dims)
+            
+            # y projection is with k_index = 1
+            yproj_box = box_calc.densityk_projection(box.get_data(namebase, dataDir, 
+                                                                  density_str, 
+                                                                  old_format), 1)
+            
+            startX, startY, startZ = box_head.offset
+            localX, localY, localZ = box_head.local_dims
+            endX, endY, endZ = startX + localX, startY + localY, startZ + localZ
+            
+            yproj_global[startX:endX, startZ:endZ] += yproj_box
+        
+        return yproj_global
     
     def get_yprojection_box(self, namebase, dataDir, nBox):
         '''
@@ -362,35 +692,80 @@ class ChollaSnapCalc:
             dataDir (str): path to the data directory
             nBoxes (list): (optional) list of boxes to load, default is all
         Returns:
-            (arr): 2D array of the projected density
+            ...
         '''
+        assert self.Snap.head.DataHead.head_set
+        assert self.Snap.head.DataHead.check_nbox(nBox)
+        assert self.Snap.head.DataHead.HydroHead.head_set
         
-        HydroBoxHead = self.Snap.head.DataHead.HydroHead.HydroBoxHeads[nBox]
+        # grab info needed to load in data
+        density_str = self.Snap.head.DataHead.HydroHead.density_str
+        old_format = self.Snap.head.DataHead.old_format
+        
+        # grab hydro box head
+        hbox_head = self.Snap.head.DataHead.HydroHead.HydroBoxHeads[nBox]
         
         # ensure HydroBoxHead has local_dims before creating new calculator
-        assert HydroBoxHead.head_set
+        assert hbox_head.head_set
+        box = ChollaHydroBox(hbox_head, self.Snap.head.nSnap)
+        box_calc = ChollaCalculator(hbox_head.local_dims)
         
-        newCalc = ChollaCalculator(HydroBoxHead.local_dims)
-        
-        return newCalc.densityk_projection(self.Snap.get_hydroboxdata(namebase, dataDir, 
-                                                                      "density", nBox),
-                                             1)
+        # y projection is with k_index = 1
+        return box_calc.densityk_projection(box.get_data(namebase, dataDir, 
+                                                         density_str, 
+                                                         old_format), 1)
+    
     
     def get_zprojection(self, namebase, dataDir, nBoxes=None):
         '''
-        Calculate the z-projected density for the entire sim box
+        Calculate the z-projected density for the entire sim box. Loop over 
+            nBoxes, apply y projection, and place onto larger array using the 
+            box's offset
         
         Args:
             namebase (str): middle string for data file names
             dataDir (str): path to the data directory
             nBoxes (list): (optional) list of boxes to load, default is all
         Returns:
-            (arr): 2D array of the projected density
+            ...
         '''
         
-        return self.Calc.densityk_projection(self.Snap.get_hydrodata(namebase, dataDir, 
-                                                                     "density", nBoxes),
-                                             2)
+        assert self.Snap.head.DataHead.head_set
+        assert self.Snap.head.DataHead.HydroHead.head_set
+        
+        new_dims = (self.Snap.head.DataHead.HydroHead.dims[0], 
+                    self.Snap.head.DataHead.HydroHead.dims[1])
+        
+        # create global array
+        zproj_global = self.Calc.create_subarr(new_dims)
+        
+        # grab info needed to load in data
+        density_str = self.Snap.head.DataHead.HydroHead.density_str
+        old_format = self.Snap.head.DataHead.old_format
+        
+        # grab info needed to create ChollaHydroBoxes
+        nsnap = self.Snap.head.nSnap
+        
+        # grab requested hydro box heads + ensure they have local_dims + offset
+        hydro_box_heads = self.Snap.get_hydro_box_heads(nBoxes)
+        
+        for box_head in hydro_box_heads:
+            # create a box + calculator object
+            box = ChollaHydroBox(box_head, nsnap)
+            box_calc = ChollaCalculator(box_head.local_dims)
+            
+            # z projection is with k_index = 2
+            zproj_box = box_calc.densityk_projection(box.get_data(namebase, dataDir, 
+                                                                  density_str, 
+                                                                  old_format), 2)
+            
+            startX, startY, startZ = box_head.offset
+            localX, localY, localZ = box_head.local_dims
+            endX, endY, endZ = startX + localX, startY + localY, startZ + localZ
+            
+            zproj_global[startX:endX, startY:endY] += zproj_box
+        
+        return yproj_global
     
     def get_zprojection_box(self, namebase, dataDir, nBox):
         '''
@@ -401,16 +776,26 @@ class ChollaSnapCalc:
             dataDir (str): path to the data directory
             nBoxes (list): (optional) list of boxes to load, default is all
         Returns:
-            (arr): 2D array of the projected density
+            ...
         '''
+        assert self.Snap.head.DataHead.head_set
+        assert self.Snap.head.DataHead.check_nbox(nBox)
+        assert self.Snap.head.DataHead.HydroHead.head_set
         
-        HydroBoxHead = self.Snap.head.DataHead.HydroHead.HydroBoxHeads[nBox]
+        # grab info needed to load in data
+        density_str = self.Snap.head.DataHead.HydroHead.density_str
+        old_format = self.Snap.head.DataHead.old_format
+        
+        # grab hydro box head
+        hbox_head = self.Snap.head.DataHead.HydroHead.HydroBoxHeads[nBox]
         
         # ensure HydroBoxHead has local_dims before creating new calculator
-        assert HydroBoxHead.head_set
+        assert hbox_head.head_set
+        box = ChollaHydroBox(hbox_head, self.Snap.head.nSnap)
+        box_calc = ChollaCalculator(hbox_head.local_dims)
         
-        newCalc = ChollaCalculator(HydroBoxHead.local_dims)
-        
-        return newCalc.densityk_projection(self.Snap.get_hydroboxdata(namebase, dataDir, 
-                                                                      "density", nBox),
-                                           2)
+        # z projection is with k_index = 2
+        return box_calc.densityk_projection(box.get_data(namebase, dataDir, 
+                                                         density_str, 
+                                                         old_format), 2)
+

@@ -17,7 +17,7 @@ class ChollaCalculator:
     
     Values are returned in code units unless otherwise specified.
     '''
-    def __init__(self, dims, dtype=float):
+    def __init__(self, dims, dtype=np.float32):
         self.dims = dims
         self.dtype = dtype
         
@@ -269,7 +269,7 @@ class ChollaCalculator:
         arr = self.create_arr()
         
         arr[:] = (gas_energy/density) * (velocity_unit**2) * (gamma - 1.0) * self.mp * mu / self.kB
-
+        
         return arr
     
     

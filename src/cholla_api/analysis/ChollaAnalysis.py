@@ -1,4 +1,5 @@
 import numpy as np
+from time import time
 
 class ChollaAnalysis:
     '''
@@ -9,7 +10,7 @@ class ChollaAnalysis:
             
     '''
     
-    def __init__(self, dims, dtype=float):
+    def __init__(self, dims, dtype=np.float32):
         self.dims = dims
         self.dtype = dtype
         
@@ -70,13 +71,14 @@ class ChollaAnalysis:
             (tuple): 2D histogram, bin edges along 1st dimension, and bin edges 
                 along 2nd dimension
         '''
-        
         log_overdensity_bins = np.linspace(-2,4)
         log_temp_bins = np.linspace(2,8)
         
         phase_bins = (log_overdensity_bins, log_temp_bins)
         
-        return self.create_hist2d(log_overdensity, log_temp, bins=phase_bins)
+        phasespace = self.create_hist2d(log_overdensity, log_temp, bins=phase_bins)
+        
+        return phasespace
     
     
     def stack_projection(self, k_index, k_domain, start, end, arr):

@@ -79,7 +79,7 @@ class ChollaHydroBox:
             fPath = dataDir + '/' + str(self.nSnap) + '/' + fName
         return fPath
     
-    def get_data(self, namebase, dataDir, data_key, old_format):
+    def get_data(self, namebase, dataDir, data_key, old_format, dtype=np.float32):
         '''
         Return a specific dataset
         
@@ -92,9 +92,9 @@ class ChollaHydroBox:
             arr (arr): dataset
         '''
         
-        arr = np.zeros(self.head.local_dims)
+        arr = np.zeros(self.head.local_dims, dtype=dtype)
         fObj = h5py.File(self.get_fPath(namebase, dataDir, old_format))
-        arr[:] = np.array(fObj[data_key]).reshape(self.head.local_dims)
+        arr[:] = fObj.get(data_key)[:]
         fObj.close()
         
         return arr
