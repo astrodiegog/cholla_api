@@ -1,5 +1,7 @@
 import numpy as np
 from time import time
+from fast_histogram import histogram2d
+
 
 class ChollaAnalysis:
     '''
@@ -71,14 +73,21 @@ class ChollaAnalysis:
             (tuple): 2D histogram, bin edges along 1st dimension, and bin edges 
                 along 2nd dimension
         '''
-        log_overdensity_bins = np.linspace(-2,4)
-        log_temp_bins = np.linspace(2,8)
+        min_loverdensity, max_loverdensity = -2, 4
+        min_ltemp, max_ltemp = 2, 8
         
-        phase_bins = (log_overdensity_bins, log_temp_bins)
+        log_overdensity_bins = np.linspace(min_loverdensity, max_loverdensity)
+        log_temp_bins = np.linspace(min_ltemp, max_ltemp)
         
-        phasespace = self.create_hist2d(log_overdensity, log_temp, bins=phase_bins)
+        # phase_bins = (log_overdensity_bins, log_temp_bins)
+        # phasespace = self.create_hist2d(log_overdensity, log_temp, bins=phase_bins)
         
-        return phasespace
+        phasespace = histogram2d(log_overdensity, log_temp, 
+                                 range=((min_loverdensity, max_loverdensity), 
+                                        (min_ltemp, max_ltemp)),
+                                 bins=(49,49))
+        
+        return (phasespace, log_overdensity_bins, log_temp_bins)
     
     
     def stack_projection(self, k_index, k_domain, start, end, arr):

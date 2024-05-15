@@ -268,7 +268,10 @@ class ChollaCalculator:
         # initialize array with dims shape
         arr = self.create_arr()
         
-        arr[:] = (gas_energy/density) * (velocity_unit**2) * (gamma - 1.0) * self.mp * mu / self.kB
+        coeff = (velocity_unit**2) * (gamma - 1.0) * self.mp * mu / self.kB
+        arr[:] += gas_energy
+        arr[:] *= coeff
+        arr[:] /= density
         
         return arr
     
@@ -288,6 +291,25 @@ class ChollaCalculator:
         arr = self.create_arr()
         
         arr[:] = density/np.median(density)
+        
+        return arr
+    
+    
+    def overdensity_mean(self, density):
+        '''
+        Calculate the density normalized by the mean of the density
+        
+        Args:
+            density (arr): hydrodynamic mass density
+        Returns:
+            (arr): array that will hold data
+        '''
+        assert np.array_equal(density.shape, self.dims)
+        
+        # initialize array with dims shape
+        arr = self.create_arr()
+        
+        arr[:] = density/np.mean(density)
         
         return arr
     

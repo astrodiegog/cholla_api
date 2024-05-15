@@ -477,7 +477,7 @@ class ChollaSnapCalc:
         
     def get_overdensity(self, namebase, dataDir, nBoxes=None):
         '''
-        Calculate the overdensity (density normalized by median) for the entire
+        Calculate the overdensity (density normalized by mean) for the entire
             sim box
         
         Args:
@@ -511,7 +511,7 @@ class ChollaSnapCalc:
             density_box = box.get_data(namebase, dataDir, density_str, 
                                        old_format)
 
-            overdensity_box = box_calc.overdensity_median(density_box)
+            overdensity_box = box_calc.overdensity_mean(density_box)
             box.place_anydata(overdensity_box, overdensity_global)
             
         return overdensity_global
@@ -519,7 +519,7 @@ class ChollaSnapCalc:
         
     def get_overdensity_box(self, namebase, dataDir, nBox):
         '''
-        Calculate the overdensity (density normalized by median) for a subvolume 
+        Calculate the overdensity (density normalized by mean) for a subvolume 
             box
         
         Args:
@@ -545,7 +545,7 @@ class ChollaSnapCalc:
         density_str = self.Snap.head.DataHead.HydroHead.density_str
         old_format = self.Snap.head.DataHead.old_format
 
-        return box_calc.overdensity_median(box.get_data(namebase, dataDir, density_str, 
+        return box_calc.overdensity_mean(box.get_data(namebase, dataDir, density_str, 
                                                         old_format))
         
         

@@ -60,7 +60,7 @@ class ChollaSnapAnalysis:
                                                                                   self.Snap.head.DataHead.HydroHead.gasenergy_str, 
                                                                                   self.Snap.head.DataHead.old_format), 
                                                                      density, gamma, mu, velocity_unit)).ravel(),
-                                          np.log10(box_calc.overdensity_median(density)).ravel()
+                                          np.log10(box_calc.overdensity_mean(density)).ravel()
                                          )
     
     
@@ -106,7 +106,7 @@ class ChollaSnapAnalysis:
                                                                                                               self.Snap.head.DataHead.HydroHead.gasenergy_str, 
                                                                                                               self.Snap.head.DataHead.old_format), 
                                                                                                  density, gamma, mu, velocity_unit)).ravel(),
-                                                                      np.log10(box_calc.overdensity_median(density)).ravel())
+                                                                      np.log10(box_calc.overdensity_mean(density)).ravel())
             
             arr += phasespacebox
         
@@ -114,7 +114,7 @@ class ChollaSnapAnalysis:
         return arr, xedges, yedges
     
         
-    def plot_cosmo_diagnostic_box(self, namebase, dataDir, gamma, mu, velocity_unit, nBox, show_ticks=True, fname=None):
+    def plot_cosmo_diagnostic_box(self, namebase, dataDir, gamma, mu, velocity_unit, nBox, show_ticks=True, fname=None, time=None):
         '''
         Plot the cosmological diagnostic for a specific box. Cosmological 
             diagnostic is defined in ChollaVizAnalysis
@@ -152,16 +152,16 @@ class ChollaSnapAnalysis:
                                                                                                  self.Snap.head.DataHead.HydroHead.gasenergy_str, 
                                                                                                  self.Snap.head.DataHead.old_format), 
                                                                                     density, gamma, mu, velocity_unit)).ravel(), 
-                                                         np.log10(box_calc.overdensity_median(density)).ravel())
+                                                         np.log10(box_calc.overdensity_mean(density)).ravel())
         
         box_vizanalysis.cosmo_diagnostic(hist, xedges, yedges, 
                                          box_calc.densityk_projection(density, 0), 
                                          box_calc.densityk_projection(density, 1), 
                                          box_calc.densityk_projection(density, 2),
-                                         show_ticks=show_ticks, fname=fname)
+                                         show_ticks=show_ticks, fname=fname, time=time)
         
         
-    def plot_cosmo_diagnostic_loop(self, namebase, dataDir, gamma, mu, velocity_unit, nBoxes = None, show_ticks=True, fname=None):
+    def plot_cosmo_diagnostic_loop(self, namebase, dataDir, gamma, mu, velocity_unit, nBoxes = None, show_ticks=True, fname=None, time_info=None):
         '''
         Plot the cosmological diagnostic for a specific box. Cosmological 
             diagnostic is defined in ChollaVizAnalysis
@@ -237,7 +237,7 @@ class ChollaSnapAnalysis:
             
             
             time_box0 = time()
-            log_overdensity = box_calc.overdensity_median(density)
+            log_overdensity = box_calc.overdensity_mean(density)
             time_overdensity[i] = time() - time_box0
             print(f"\tCalculating overdensity took {time_overdensity[i]:.2f} secs")
             
@@ -314,5 +314,6 @@ class ChollaSnapAnalysis:
         
         print("calling cosmo diagnostic function")
         chviz_analysis.cosmo_diagnostic(phasespace, xedges, yedges, n_x, n_y, n_z,
-                                        show_ticks=show_ticks, fname=fname)
+                                        show_ticks=show_ticks, fname=fname,
+                                        time=time_info)
         print(f"ENDING COSMO DIAGNOSTIC LOOP. Took total of {time() - time0:.2f} seconds")

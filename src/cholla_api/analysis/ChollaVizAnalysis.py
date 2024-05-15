@@ -15,7 +15,7 @@ class ChollaVizAnalysis:
         self.dpi = dpi
         
     
-    def cosmo_diagnostic(self, phasespace, phase_xedge, phase_yedge, n_x, n_y, n_z, show_ticks=True, fname=None):
+    def cosmo_diagnostic(self, phasespace, phase_xedge, phase_yedge, n_x, n_y, n_z, show_ticks=True, fname=None, time=None):
         '''
         Create a 2x2 plot of n_i and phase space
             top-left will be phase space diagram
@@ -32,6 +32,8 @@ class ChollaVizAnalysis:
         n_z (x,y) needs to flip order of vertical so x is decreasing downward
         n_y (x,z) needs to flip order of both axes so x is decreasing downward 
             and z is decreasing leftward
+        
+        time is tuple (snap number, cosmic age, redshift)
         '''
         
         # normalize 2D histogram + take its log10
@@ -111,6 +113,14 @@ class ChollaVizAnalysis:
         ax[0,1].annotate(rhox_str, xy=rhox_str_coords, color='white', fontsize=35)
         ax[1,0].annotate(rhoy_str, xy=rhoy_str_coords, color='white', fontsize=35)
         ax[1,1].annotate(rhoz_str, xy=rhoz_str_coords, color='white', fontsize=35)
+        
+        # add time info if wanted
+        if time is not None:
+            nsnap, age, redshift = time
+            time_title_str = f'snap: {nsnap:.0f} - '
+            time_title_str += f'age: {age:.2f} kyr - '
+            time_title_str += f'z = {redshift:.2f}'
+            ax[0,1].set_title(time_title_str, fontsize=18)
 
         # add phase space colorbar
         fig.subplots_adjust(left=0.1, top=0.9)
