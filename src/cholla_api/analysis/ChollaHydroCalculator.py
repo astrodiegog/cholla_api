@@ -363,12 +363,10 @@ class ChollaHydroCalculator:
 
         min_loverdensity, max_loverdensity = -2, 4
         min_ltemp, max_ltemp = 2, 8
-        # min_ltemp, max_ltemp = 8, 14
 
-        phasespace = np.histogram2d(log_overdensity, log_temp,
-                                    range=((min_loverdensity, max_loverdensity),
-                                           (min_ltemp, max_ltemp)),
-                                    bins=(49,49))
+        return np.histogram2d(log_overdensity, log_temp,
+                              range=((min_loverdensity, max_loverdensity),
+                                     (min_ltemp, max_ltemp)),
+                              bins=(49,49))
 
-        return (phasespace, log_overdensity_bins, log_temp_bins)
 
