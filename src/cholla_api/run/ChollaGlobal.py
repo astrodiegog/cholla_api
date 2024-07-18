@@ -139,7 +139,7 @@ class ChollaGlobal:
         self.gamma = fObj.attrs['gamma']
 
         # grab cosmology params
-        if cosmo_flag:
+        if self.cosmo_flag:
             self.H0 = fObj.attrs['H0']
             self.Omega_L = fObj.attrs['Omega_L']
             self.Omega_M = fObj.attrs['Omega_M']
@@ -147,7 +147,7 @@ class ChollaGlobal:
         fObj.close()
 
         # grab particle info
-        if particles_flag:
+        if self.particles_flag:
             fObj = h5py.File(box.get_particlefPath(), 'r')
             self.paticle_mass_unit = fObj.attrs['particle_mass']
             fObj.close()
