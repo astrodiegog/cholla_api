@@ -11,7 +11,9 @@ class ChollaVizAnalysis:
     def __init__(self, dims, offset, dpi=256):
         self.xmin, self.ymin, self.zmin = offset
         self.xdim, self.ydim, self.zdim = dims
-        self.xmax, self.ymax, self.zmax = dims + offset
+        self.xmax = self.xmin + self.xdim
+        self.ymax = self.ymin + self.ydim
+        self.zmax = self.zmin + self.zdim
         self.dpi = dpi
         
     
