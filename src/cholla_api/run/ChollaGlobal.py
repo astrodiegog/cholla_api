@@ -96,7 +96,7 @@ class ChollaGlobal:
         snaphead = ChollaSnapHead(nSnap)
         snap = ChollaSnap(self.dataPath, snaphead)
         box = self.get_snapbox(nSnap, box_for_attrs)
-        snap.SnapHead.set_time_info(box)
+        snap.SnapHead.set_timeinfo(box)
 
         if self.cosmo_flag:
             snap.SnapHead.set_cosmoinfo(box)
