@@ -227,7 +227,7 @@ class ChollaSnapHydroCalc:
        
     def get_xprojection(self):
         '''
-        Calculate the x-projected density for Box
+        Calculate the x-projected density
 
         Args:
             ...
@@ -260,7 +260,7 @@ class ChollaSnapHydroCalc:
     
     def get_yprojection(self):
         '''
-        Calculate the y-projected density for Box
+        Calculate the y-projected density
 
         Args:
             ...
@@ -293,7 +293,7 @@ class ChollaSnapHydroCalc:
 
     def get_zprojection(self):
         '''
-        Calculate the z-projected density for Box
+        Calculate the z-projected density
 
         Args:
             ...
@@ -324,6 +324,33 @@ class ChollaSnapHydroCalc:
                                                                                self.Calculator.dtype),
                                                        2)
 
-    
+
+
+    def get_phasespace(self, gamma, mu, velocity_unit):
+        '''
+        Calculate and return the phase space
+
+        Args:
+            gamma (float): ratio of specific heats
+            mu (float): mean molecular weight in amu
+            velocity_unit (float): unit conversion from velocity code units to cgs
+        Returns:
+            (tuple): phase space, overdensity bin edges, temp bin edges
+        '''
+
+        if self.boxcalc:
+            phasespace_snap = np.zeros((49,49), dtype=int)
+
+            for boxhead in self.Grid.get_BoxHeads():
+                box = ChollaBox(self.Snap.SnapPath, boxhead)
+                boxhydrocalc = ChollaBoxHydroCalc(box, self.Calculator.dtype)
+                phasespace_box, xbin, ybin  = boxhydrocalc.get_phasespace(gamma, mu, velocity_unit)
+                phasespace_snap += phasespace_box
+
+            return (phasespace_snap, xbin, ybin)
+        else:
+            return self.Calculator.create_phase(np.log10(self.get_gastemp(gamma, mu, 
+                                                                          velocity_unit)).ravel(),
+                                                np.log10(self.get_overdensity()).ravel())
 
 
