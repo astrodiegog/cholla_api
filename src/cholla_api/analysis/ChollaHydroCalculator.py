@@ -1,6 +1,6 @@
 import numpy as np
 
-class ChollaCalculator:
+class ChollaHydroCalculator:
     '''
     Cholla Calculator object
         Serves as a calculator where the calculated values have some expected
@@ -42,9 +42,9 @@ class ChollaCalculator:
         Create and return an empty array of new dimension shapes
         
         Args:
-            new_dims (tuple): holds shape of new array
+            new_dims (tuple): shape of new array
         Returns:
-            (arr): array of initialized dimensions and datatype
+            (arr): array of new dimensions and initialized datatype
         '''
         
         return np.zeros(new_dims, dtype=self.dtype)
@@ -57,7 +57,7 @@ class ChollaCalculator:
             density (arr): hydrodynamic mass density
             mom_x (arr): x-momentum density
         Returns:
-            (arr): array that will hold data
+            arr (arr): array that will hold data
         '''
         assert np.array_equal(density.shape, self.dims)
         assert np.array_equal(mom_x.shape, self.dims)
@@ -77,7 +77,7 @@ class ChollaCalculator:
             density (arr): hydrodynamic mass density
             mom_y (arr): y-momentum density
         Returns:
-            (arr): array that will hold data
+            arr (arr): array that will hold data
         '''
         assert np.array_equal(density.shape, self.dims)
         assert np.array_equal(mom_y.shape, self.dims)
@@ -97,7 +97,7 @@ class ChollaCalculator:
             density (arr): hydrodynamic mass density
             mom_z (arr): z-momentum density
         Returns:
-            (arr): array that will hold data
+            arr (arr): array that will hold data
         '''
         assert np.array_equal(density.shape, self.dims)
         assert np.array_equal(mom_z.shape, self.dims)
@@ -119,7 +119,7 @@ class ChollaCalculator:
             mom_y (arr): y-momentum density
             mom_z (arr): z-momentum density
         Returns:
-            (arr): array that will hold data
+            arr (arr): array that will hold data
         '''
         assert np.array_equal(density.shape, self.dims)
         assert np.array_equal(mom_x.shape, self.dims)
@@ -144,7 +144,7 @@ class ChollaCalculator:
                 total energy density minus the kinetic energy density
             gamma (float): ratio of specific heats
         Returns:
-            (arr): array that will hold data
+            arr (arr): array that will hold data
         '''
         assert np.array_equal(gas_energy.shape, self.dims)
         assert gamma > 1.0
@@ -168,7 +168,7 @@ class ChollaCalculator:
             mom_z (arr): z-momentum density
             gamma (float): ratio of specific heats
         Returns:
-            (arr): array that will hold data
+            arr (arr): array that will hold data
         '''
         assert np.array_equal(energy.shape, self.dims)
         assert np.array_equal(density.shape, self.dims)
@@ -196,7 +196,7 @@ class ChollaCalculator:
                 total energy density minus the kinetic energy density
             density (arr): hydrodynamic mass density
         Returns:
-            (arr): array that will hold data
+            arr (arr): array that will hold data
         '''
         assert np.array_equal(gas_energy.shape, self.dims)
         assert np.array_equal(density.shape, self.dims)
@@ -221,7 +221,7 @@ class ChollaCalculator:
             mom_y (arr): y-momentum density
             mom_z (arr): z-momentum density
         Returns:
-            (arr): array that will hold data
+            arr (arr): array that will hold data
         '''
         assert np.array_equal(energy.shape, self.dims)
         assert np.array_equal(density.shape, self.dims)
@@ -257,7 +257,7 @@ class ChollaCalculator:
             mu (float): mean molecular weight in amu
             velocity_unit (float): unit conversion from velocity code units to cgs
         Returns:
-            (arr): array that will hold data
+            arr (arr): array that will hold data
         '''
         assert np.array_equal(gas_energy.shape, self.dims)
         assert np.array_equal(density.shape, self.dims)
@@ -283,7 +283,7 @@ class ChollaCalculator:
         Args:
             density (arr): hydrodynamic mass density
         Returns:
-            (arr): array that will hold data
+            arr (arr): array that will hold data
         '''
         assert np.array_equal(density.shape, self.dims)
         
@@ -302,7 +302,7 @@ class ChollaCalculator:
         Args:
             density (arr): hydrodynamic mass density
         Returns:
-            (arr): array that will hold data
+            arr (arr): array that will hold data
         '''
         assert np.array_equal(density.shape, self.dims)
         
@@ -324,17 +324,17 @@ class ChollaCalculator:
         Args:
             density (arr): hydrodynamic mass density
         Returns:
-            (arr): array that will hold data
+            arr (arr): array that will hold data
         '''
         assert np.array_equal(density.shape, self.dims)
         assert k_index >= 0
-        assert k_index <= 3
+        assert k_index < 3
         
         # new shape will be of the other two indices, we don't assume cube dims
         # use a boolean mask of the shape to grab the other two dim sizes
         newshape_mask = np.ones(3, dtype=bool)
         newshape_mask[k_index] = False
-        # need to cast arr.shape tuple to an array to apply boolean mask
+        # need to cast density.shape tuple to an array to apply boolean mask
         subarr_shape = np.array(density.shape)[newshape_mask]
         
         # initialize array with dims shape
@@ -343,4 +343,28 @@ class ChollaCalculator:
         arr[:] = np.sum(density, axis=k_index)
         
         return arr
-    
+ 
+
+    def create_phase(self, log_temp, log_overdensity):
+        '''
+        Create a 2D histogram for temperature and overdensity. Designed for
+            cosmological simulations
+        
+        Args:
+            log_temp (arr): log-base10 of the gas temperature
+            log_temp (arr): log-base10 of the gas overdensity
+        Returns:
+            (tuple): 2D histogram, bin edges along 1st dimension, and bin edges 
+                along 2nd dimension
+        '''
+        min_loverdensity, max_loverdensity = -2, 4
+        min_ltemp, max_ltemp = 2, 8
+        # min_ltemp, max_ltemp = 8, 14
+
+        phasespace = histogram2d(log_overdensity, log_temp,
+                                 range=((min_loverdensity, max_loverdensity),
+                                        (min_ltemp, max_ltemp)),
+                                 bins=(49,49))
+
+        return (phasespace, log_overdensity_bins, log_temp_bins)
+

@@ -1,9 +1,7 @@
 import numpy as np
 import h5py
 
-from cholla_api.data.ChollaData import ChollaDataHead
-from cholla_api.data.ChollaHydroBox import ChollaHydroBox
-from cholla_api.data.ChollaParticleBox import ChollaParticleBox
+from cholla_api.data.ChollaBox import ChollaBox
 
 class ChollaSnapHead:
     '''
@@ -15,75 +13,60 @@ class ChollaSnapHead:
     
     def __init__(self, nSnap):
         self.nSnap = nSnap
-        self.head_set = False
-        self.datahead_set = False
-    
-    def set_head(self, nBox, namebase, dataDir, particles_flag, cosmo_flag, old_format):
+   
+    def set_timeinfo(self, ChollaBox):
         '''
-        Set the header attributes for this object
-        
+        Set time attributes for this object
+
         Args:
-            nBox (int): what box number to use
-            namebase (str): middle string for data file names
-            dataDir (str): path to the data directory
-            particles_flag (bool): whether particle data was saved
-            cosmo_flag (bool): whether cosmology type was used
-            old_format (bool): whether the old file structure was used
+            ChollaBox (ChollaBox): what box to use to set attributes
         Returns:
             ...
         '''
-        fName = '{0}.{1}.{2}'.format(self.nSnap, namebase, nBox)
-        if old_format:
-            fPath = dataDir + '/' + fName
-        else:
-            fPath = dataDir + '/' + str(self.nSnap) + '/' + fName
+
+        fPath = ChollaBox.get_hydrofPath()
         fObj = h5py.File(fPath, 'r')
-        
-        # grab t + dt
+
         self.t = float(fObj.attrs['t'])
         self.dt = float(fObj.attrs['dt'])
-        
-        # grab cosmology info
-        # cosmo info not well defined for snap=0
-        if cosmo_flag and self.nSnap>0:
-            self.a = float(fObj.attrs['Current_a'])
-            self.z = float(fObj.attrs['Current_z'])
-        
+
         fObj.close()
-        
-        # grab particles info
-        # particle info not well defined for snap=0
-        if particles_flag and self.nSnap>0:
-            fName = '{0}_particles.{1}.{2}'.format(self.nSnap, namebase, nBox)
-            if old_format:
-                fPath = dataDir + '/' + fName
-            else:
-                fPath = dataDir + '/' + str(self.nSnap) + '/' + fName
-            fObj = h5py.File(fPath, 'r')
-            self.t_particles = fObj.attrs['t_particles']
-            self.dt_particles = fObj.attrs['dt_particles']
-            fObj.close()
-        
-        self.head_set = True
-        
-    
-    def set_datahead(self, nBoxes, namebase, dataDir, particles_flag, old_format):
+
+    def set_cosmoinfo(self, ChollaBox):
         '''
-        Create and populate DataHead object. Set each DataHydroHeads's and
-            DataParticleHeads's arrays of objects
-        
+        Set cosmology time attributes for this object
+
         Args:
-            nBoxes (int): total number of boxes used to run simulation
-            namebase (str): middle string for data file names
-            dataDir (str): path to the data directory
-            particles_flag (bool): whether particle data was saved
-            old_format (bool): whether the old file structure was used
+            ChollaBox (ChollaBox): what box to use to set attributes
         Returns:
             ...
         '''
-        self.DataHead = ChollaDataHead(nBoxes, old_format)
-        self.DataHead.set_head(self.nSnap, namebase, dataDir, particles_flag)
-        self.datahead_set = True
+
+        fPath = ChollaBox.get_hydrofPath()
+        fObj = h5py.File(fPath, 'r')
+
+        self.a = float(fObj.attrs['Current_a'])
+        self.z = float(fObj.attrs['Current_z'])
+
+        fObj.close()
+
+    def set_particleinfo(self, ChollaBox):
+        '''
+        Set particle time attributes for this object
+
+        Args:
+            ChollaBox (ChollaBox): what box to use to set attributes
+        Returns:
+            ...
+        '''
+
+        fPath = ChollaBox.get_particlefPath()
+        fObj = h5py.File(fPath, 'r')
+
+        self.t_particles = float(fObj.attrs['t_particles'])
+        self.dt_particles = float(fObj.attrs['dt_particles'])
+
+        fObj.close()
 
 
 
@@ -100,385 +83,103 @@ class ChollaSnap:
         create method to load data within a requested domain. would I have to 
             create a separate method in BoxHeads for global domain? this would
             save having to save the local dims and offset redundant.
-        LOOK AT BRUNO'S PULL REQUEST. he essentially does something very similar
-            to this!
     '''
     
-    def __init__(self, SnapHead):
-        self.head = SnapHead
-        # assert that the SnapHead is already set
-        assert self.head.head_set
-        
-    def get_hydroboxdata(self, namebase, dataDir, data_key, nBox):
+    def __init__(self, RunPath, ChollaSnapHead):
+        self.SnapHead = ChollaSnapHead
+        self.SnapPath = RunPath + '/' + str(self.SnapHead.nSnap)
+
+    def get_hydroboxdata(self, ChollaBoxHead, key, dtype=np.float32):
         '''
-        Grab data for a specific Box
-            
+        Grab hydro data for a specific Box
+
         Args:
-            namebase (str): middle string for data file names
-            dataDir (str): path to the data directory
-            data_key (str): key to access data from hdf5 file
-            nBox (int): index of the box to load
-        Returns:
-            (arr): array that will hold data information
+            ChollaBoxHead (ChollaBoxHead): head for box to use
+            key (str): key to access data from hydro hdf5 file
+            dtype (np type): (optional) numpy precision to use
+        Returns
+            (arr): array holding data
         '''
-        assert self.head.DataHead.head_set
-        assert self.head.DataHead.HydroHead.head_set
-        
-        # make sure requested nBox is valid
-        assert self.head.DataHead.check_nbox(nBox)
-        
-        # make sure requested data_key is valid
-        assert self.head.DataHead.HydroHead.check_datakey(data_key)
-        
-        HydroBoxHead = self.head.DataHead.HydroHead.HydroBoxHeads[nBox]
-        
-        # ensure HydroBoxHead has local_dims and offset
-        assert HydroBoxHead.head_set
-        ch_hydrobox = ChollaHydroBox(HydroBoxHead, self.head.nSnap)
-        
-        return ch_hydrobox.get_data(namebase, dataDir, data_key, self.head.DataHead.old_format)
-    
-    
-    def get_particleboxdata(self, namebase, dataDir, data_key, nBox):
+
+        box = ChollaBox(self.SnapPath, ChollaBoxHead)
+
+        return box.get_hydrodata(key, dtype)
+
+    def get_particleboxdata(self, ChollaBoxHead, key, dtype=np.float32):
         '''
-        Grab data for a specific Box
-            
+        Grab particle data for a specific Box
+
         Args:
-            namebase (str): middle string for data file names
-            dataDir (str): path to the data directory
-            data_key (str): key to access data from hdf5 file
-            nBox (int): index of the box to load
-        Returns:
-            arr (arr): array that will hold data information
+            ChollaBoxHead (ChollaBoxHead): head for box to use
+            key (str): key to access data from particle hdf5 file
+            dtype (np type): (optional) numpy precision to use
+        Returns
+            (arr): array holding data
         '''
-        assert self.head.DataHead.head_set
-        assert self.head.DataHead.ParticleHead.head_set
-        
-        # make sure requested nBox is valid
-        assert self.head.DataHead.check_nbox(nBox)
-        
-        # make sure requested data_key is valid
-        assert self.head.DataHead.ParticleHead.check_datakey(data_key)
-        
-        ParticleBoxHead = self.head.DataHead.ParticleHead.ParticleBoxHeads[nBox]
-        
-        # ensure ParticleBoxHead has local_dims and offset
-        assert ParticleBoxHead.head_set
-        ch_particlebox = ChollaParticleBox(ParticleBoxHead, self.head.nSnap)
-        
-        return ch_particlebox.get_data(namebase, dataDir, data_key, self.head.DataHead.old_format)
-    
-    
-    def get_hydro_box_heads(self, nBoxes):
+
+        box = ChollaBox(self.SnapPath, ChollaBoxHead)
+
+        return box.get_particledata(key, dtype)
+
+    def get_hydrodata(self, ChollaGrid, key, dtype=np.float32):
         '''
-        Find all HydroBoxHeads to load given a requested list of box indices. 
-            The purpose of this method is to ensure that any requested nBox is
-            valid to be set
-        
+        Grab hydro data for all boxes and concatenate data
+
         Args:
-            nBoxes (list or None): list of boxes to load, None is all
+            ChollaGrid (ChollaGrid): grid holding boxheads
+            key (str): key to access data from hydro hdf5 file
         Returns:
-            (arr): array that will hold all HydroBoxHeads corresponding to box
-                indices requested
+            arr (arr): array holding global data
         '''
-        assert self.head.DataHead.head_set
-        
-        if nBoxes is None:
-            assert self.head.DataHead.HydroHead.head_set
-            assert self.head.DataHead.HydroHead.boxheads_set
-            
-            return self.head.DataHead.HydroHead.HydroBoxHeads
-        else:
-            assert self.head.DataHead.HydroHead.head_set
-            hydro_box_heads = np.empty(len(nBoxes), dtype=object)
-            for nBox, nBox_toload in enumerate(nBoxes):
-                # make sure requested nBox is valid
-                assert self.head.DataHead.check_nbox(nBox_toload)
-                
-                hydro_box_heads[nBox] = self.head.DataHead.HydroHead.HydroBoxHeads[nBox_toload]
-            
-            return hydro_box_heads
-    
-    def get_hydrodata(self, namebase, dataDir, data_key, nBoxes=None):
-        '''
-        Grab and concatenate data onto one large array for the entire simulation
-            box. WARNING that entire simulations are usually pretty large and
-            will take up lots of space. Be careful!
-            
-        Args:
-            namebase (str): middle string for data file names
-            dataDir (str): path to the data directory
-            data_key (str): key to access data from hdf5 file
-            nBoxes (list): (optional) list of boxes to load, default is all
-        Returns:
-            arr (arr): array that will hold data information
-        '''
-        assert self.head.DataHead.head_set
-        assert self.head.DataHead.HydroHead.head_set
-        
-        # make sure requested data_key is valid
-        assert self.head.DataHead.HydroHead.check_datakey(data_key)
-        
-        # initialize array
-        arr = np.zeros(self.head.DataHead.HydroHead.dims)
-        
-        # create the hydro box heads to loop over
-        if nBoxes is None:
-            assert self.head.DataHead.HydroHead.boxheads_set
-            
-            hydro_box_heads = self.head.DataHead.HydroHead.HydroBoxHeads
-        else:
-            hydro_box_heads = np.empty(len(nBoxes), dtype=object)
-            for nBox, nBox_toload in enumerate(nBoxes):
-                # make sure requested nBox is valid
-                assert self.head.DataHead.check_nbox(nBox_toload)
-                
-                hydro_box_heads[nBox] = self.head.DataHead.HydroHead.HydroBoxHeads[nBox_toload]
-            
-        
-        for HydroBoxHead in hydro_box_heads:
-            # ensure HydroBoxHead has local_dims and offset
-            assert HydroBoxHead.head_set
-            
-            ch_hydrobox = ChollaHydroBox(HydroBoxHead, self.head.nSnap)
-            ch_hydrobox.place_data(namebase, dataDir, data_key, arr,
-                                   self.head.DataHead.old_format)
-        
+
+        arr = np.zeros((ChollaGrid.nx_global, ChollaGrid.ny_global, ChollaGrid.nz_global), dtype=dtype)
+
+        for boxhead in ChollaGrid.get_BoxHeads():
+            box = ChollaBox(self.SnapPath, boxhead)
+            boxdata = box.get_hydrodata(key, dtype)
+            box.place_data(boxdata, arr)
+
         return arr
 
-    def get_particledata(self, namebase, dataDir, data_key, nBoxes=None):
+    def get_particledata(self, ChollaGrid, key, dtype=np.float32):
         '''
-        Grab and concatenate data onto one large array for the entire simulation
-            box.
-            
+        Grab particle data for all boxes and concatenate data
+
         Args:
-            namebase (str): middle string for data file names
-            dataDir (str): path to the data directory
-            data_key (str): key to access data from hdf5 file
-            nBoxes (list): (optional) list of boxes to load, default is all
+            ChollaGrid (ChollaGrid): grid holding boxheads
+            key (str): key to access data from particle hdf5 file
         Returns:
-            arr (arr): array that will hold data information
+            arr (arr): array holding global data
         '''
-        assert self.head.DataHead.head_set
-        assert self.head.DataHead.ParticleHead.head_set
-        
-        # make sure requested data_key is valid
-        assert self.head.DataHead.ParticleHead.check_datakey(data_key)
-        
-        densityCIC_key = "density"
-        # initialize array
-        if data_key == densityCIC_key:
-            arr = np.zeros(self.head.DataHead.ParticleHead.dims)
+
+        if (key == "density"):
+            arr = np.zeros((ChollaGrid.nx_global, ChollaGrid.ny_global, ChollaGrid.nz_global), dtype=dtype)
+
+            for boxhead in ChollaGrid.get_BoxHeads():
+                box = ChollaBox(self.SnapPath, boxhead)
+                boxdata = box.get_particledata(key, dtype)
+                box.place_data(boxdata, arr)
         else:
-            arr = np.zeros(self.head.DataHead.ParticleHead.n_parts_total)
-        
-        # create the particle box heads to loop over
-        if nBoxes is not None:
-            particle_box_heads = np.empty(len(nBoxes), dtype=object)
-            for nBox, nBox_toload in enumerate(nBoxes):
-                # make sure requested nBox is valid
-                assert self.head.DataHead.check_nbox(nBox_toload)
-                
-                particle_box_heads[nBox] = self.head.DataHead.ParticleHead.ParticleBoxHeads[nBox_toload]
-        else:
-            particle_box_heads = self.head.DataHead.ParticleHead.ParticleBoxHeads
-        
-        for ParticleBoxHead in particle_box_heads:
-            # ensure ParticleBoxHead has local_dims and offset
-            assert ParticleBoxHead.head_set
-            
-            ch_particlebox = ChollaParticleBox(ParticleBoxHead, self.head.nSnap)
-            ch_particlebox.place_data(namebase, dataDir, data_key, arr,
-                                      self.head.DataHead.old_format)
-        
+            nparts_tot = 0
+            nparts_local = np.zeros(ChollaGrid.nprocs, dtype=int)
+            nparts_offsets = np.zeros(ChollaGrid.nprocs, dtype=int)
+
+            for boxhead in ChollaGrid.get_BoxHeads():
+                box = ChollaBox(self.SnapPath, boxhead)
+                nparts_offsets[box.BoxHead.nBox] = nparts_tot
+                nparts_local[box.BoxHead.nBox] = box.get_nparts()
+                nparts_tot += nparts_local[box.BoxHead.nBox]
+
+            arr = np.zeros(int(nparts_tot), dtype=dtype)
+
+            for boxhead in ChollaGrid.get_BoxHeads():
+                box = ChollaBox(self.SnapPath, boxhead)
+                nStart = nparts_offsets[box.BoxHead.nBox]
+                nLocal = nparts_local[box.BoxHead.nBox]
+                nEnd = nStart + nLocal
+                arr[nStart:nEnd] = box.get_particle_data(key, dtype)
+
         return arr
+        
     
-    def get_densityCIC(self, namebase, dataDir):
-        '''
-        Get particle density cloud-in-cell data
-        
-        Args:
-            namebase (str): middle string for data file names
-            dataDir (str): path to the data directory
-        Returns:
-            (arr): array that will hold density information
-        '''
-        
-        return self.get_particledata(namebase, dataDir, "density")
-    
-    
-    def get_posx(self, namebase, dataDir):
-        '''
-        Get particle x position data
-        
-        Args:
-            namebase (str): middle string for data file names
-            dataDir (str): path to the data directory
-        Returns:
-            (arr): array that will hold x position information
-        '''
-        
-        return self.get_particledata(namebase, dataDir, "pos_x")
-    
-    
-    def get_posy(self, namebase, dataDir):
-        '''
-        Get particle y position data
-        
-        Args:
-            namebase (str): middle string for data file names
-            dataDir (str): path to the data directory
-        Returns:
-            (arr): array that will hold x position information
-        '''
-        
-        return self.get_particledata(namebase, dataDir, "pos_y")
-    
-    def get_posz(self, namebase, dataDir):
-        '''
-        Get particle z position data
-        
-        Args:
-            namebase (str): middle string for data file names
-            dataDir (str): path to the data directory
-        Returns:
-            (arr): array that will hold z position information
-        '''
-        
-        return self.get_particledata(namebase, dataDir, "pos_z")
-    
-    
-    def get_velx(self, namebase, dataDir):
-        '''
-        Get particle x velocity data
-        
-        Args:
-            namebase (str): middle string for data file names
-            dataDir (str): path to the data directory
-        Returns:
-            (arr): array that will hold x velocity information
-        '''
-        
-        return self.get_particledata(namebase, dataDir, "vel_x")
-    
-    
-    def get_vely(self, namebase, dataDir):
-        '''
-        Get particle y velocity data
-        
-        Args:
-            namebase (str): middle string for data file names
-            dataDir (str): path to the data directory
-        Returns:
-            (arr): array that will hold y velocity information
-        '''
-        
-        return self.get_particledata(namebase, dataDir, "vel_y")
-    
-    def get_velz(self, namebase, dataDir):
-        '''
-        Get particle z velocity data
-        
-        Args:
-            namebase (str): middle string for data file names
-            dataDir (str): path to the data directory
-        Returns:
-            (arr): array that will hold z velocity information
-        '''
-        
-        return self.get_particledata(namebase, dataDir, "vel_z")
-    
-    def get_partid(self, namebase, dataDir):
-        '''
-        Get particle id data
-        
-        Args:
-            namebase (str): middle string for data file names
-            dataDir (str): path to the data directory
-        Returns:
-            (arr): array that will hold particle id information
-        '''
-        
-        return self.get_particledata(namebase, dataDir, "particle_IDs")
-    
-    
-    def get_density(self, namebase, dataDir):
-        '''
-        Get hydro density data
-        
-        Args:
-            namebase (str): middle string for data file names
-            dataDir (str): path to the data directory
-        Returns:
-            (arr): array that will hold density information
-        '''
-        
-        return self.get_hydrodata(namebase, dataDir, "density")
-    
-    
-    def get_momentumx(self, namebase, dataDir):
-        '''
-        Get hydro momentum in x-direction data
-        
-        Args:
-            namebase (str): middle string for data file names
-            dataDir (str): path to the data directory
-        Returns:
-            (arr): array that will hold momentum in x-direction information
-        '''
-        
-        return self.get_hydrodata(namebase, dataDir, "momentum_x")
-    
-    def get_momentumy(self, namebase, dataDir):
-        '''
-        Get hydro momentum in y-direction data
-        
-        Args:
-            namebase (str): middle string for data file names
-            dataDir (str): path to the data directory
-        Returns:
-            (arr): array that will hold momentum in y-direction information
-        '''
-        
-        return self.get_hydrodata(namebase, dataDir, "momentum_y")
-    
-    def get_momentumz(self, namebase, dataDir):
-        '''
-        Get hydro momentum in z-direction data
-        
-        Args:
-            namebase (str): middle string for data file names
-            dataDir (str): path to the data directory
-        Returns:
-            (arr): array that will hold momentum in z-direction information
-        '''
-        
-        return self.get_hydrodata(namebase, dataDir, "momentum_z")
-    
-    def get_energy(self, namebase, dataDir):
-        '''
-        Get hydro energy data
-        
-        Args:
-            namebase (str): middle string for data file names
-            dataDir (str): path to the data directory
-        Returns:
-            (arr): array that will hold energy information
-        '''
-        
-        return self.get_hydrodata(namebase, dataDir, "Energy")
-    
-    
-    def get_gasenergy(self, namebase, dataDir):
-        '''
-        Get hydro gas energy data. Only works if Dual Energy formalism was used
-        
-        Args:
-            namebase (str): middle string for data file names
-            dataDir (str): path to the data directory
-        Returns:
-            (arr): array that will hold gas energy information
-        '''
-        
-        return self.get_hydrodata(namebase, dataDir, "GasEnergy")
     

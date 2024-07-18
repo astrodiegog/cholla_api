@@ -1,5 +1,6 @@
 import numpy as np
 import h5py
+from time import time
 
 from cholla_api.data.ChollaHydroBox import ChollaHydroBoxHead
 from cholla_api.data.ChollaParticleBox import ChollaParticleBoxHead
@@ -61,7 +62,11 @@ class ChollaParticleHead:
         '''
         
         self.n_parts_total = 0
+        time_boxes = np.zeros(nBoxes)
+
         for nBox in range(nBoxes):
+            time_box1 = time()
+
             self.ParticleBoxHeads[nBox] = ChollaParticleBoxHead(nBox)
             self.ParticleBoxHeads[nBox].set_head(nSnap, nBox, namebase, dataDir, 
                                                  old_format)
@@ -69,7 +74,11 @@ class ChollaParticleHead:
             if nSnap>0:
                 # no particles in nsnap=0
                 self.n_parts_total += self.ParticleBoxHeads[nBox].local_nparts
+
+            time_boxes[nBox] = time() - time_box1
         
+        print(f"Each ParticleBoxHead set took avg of {np.median(time_boxes):.2f} secs w std dev of {np.std(time_boxes):.2f} secs")
+
         self.boxheads_set = True
     
     def check_datakey(self, data_key):
@@ -125,9 +134,9 @@ class ChollaHydroHead:
         Returns:
             ...
         '''
-        if nSnap == 0:
-            # snapshot hydro data not well defined for snap=0
-            return
+        #if nSnap == 0:
+        #    # snapshot hydro data not well defined for snap=0
+        #    return
         
         fName = '{0}.{1}.{2}'.format(nSnap, namebase, nBox)
         if old_format:
@@ -154,10 +163,16 @@ class ChollaHydroHead:
             ...
         '''
         
+        time_boxes = np.zeros(nBoxes)
         for nBox in range(nBoxes):
+            time_box1 = time()
+
             self.HydroBoxHeads[nBox] = ChollaHydroBoxHead(nBox)
             self.HydroBoxHeads[nBox].set_head(nSnap, namebase, dataDir, old_format)
+
+            time_boxes[nBox] = time() - time_box1
         
+        print(f"Each HydroBoxHead set took avg of {np.median(time_boxes):.2f} secs w std dev of {np.std(time_boxes):.2f} secs")
         self.boxheads_set = True        
 
     

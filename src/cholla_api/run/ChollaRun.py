@@ -1,4 +1,5 @@
 import numpy as np
+from time import time
 import h5py
 
 from cholla_api.snap.ChollaSnap import ChollaSnapHead
@@ -40,7 +41,13 @@ class ChollaGlobalHead:
         Returns:
             ...
         '''
+
+        time_snaps = np.zeros(self.nSnaps)
+
         for nSnap in range(self.nSnaps):
+            print(f"Setting SnapHead {nSnap:.0f}")
+            time_snap1 = time()
+
             self.SnapHeads[nSnap] = ChollaSnapHead(nSnap)
             if nSnap==0 and cosmo_flag:
                 # file data not well defined for cosmo snap=0
@@ -59,6 +66,11 @@ class ChollaGlobalHead:
                 print(f"Unable to open snapshot {nSnap:.0f}. Setting SnapHead as None.")
                 self.SnapHeads[nSnap] = None
             
+            if self.SnapHeads[nSnap].head_set:
+                time_snaps[nSnap] = time() - time_snap1
+                print(f"SnapHead {nSnap:.0f} is set! Took {time_snaps[nSnap]:.3f} secs")
+        
+        print(f"Each Snap took avg of {np.median(time_snaps):.2f} secs w std dev of {np.std(time_snaps):.2f} secs")
             
         self.snapheads_set = True
     
