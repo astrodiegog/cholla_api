@@ -16,7 +16,7 @@ class ChollaBoxHydroCalc:
     
     def __init__(self, ChollaBox, dtype=np.float32):
         self.Box = ChollaBox
-        self.Calculator = ChollaHydroCalculator(self.ChollaBox.BoxHead.local_dims, dtype=dtype)
+        self.Calculator = ChollaHydroCalculator(self.Box.BoxHead.local_dims, dtype=dtype)
 
     def get_vmag(self):
         '''
