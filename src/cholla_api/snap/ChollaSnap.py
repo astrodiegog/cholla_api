@@ -27,8 +27,8 @@ class ChollaSnapHead:
         fPath = ChollaBox.get_hydrofPath()
         fObj = h5py.File(fPath, 'r')
 
-        self.t = float(fObj.attrs['t'])
-        self.dt = float(fObj.attrs['dt'])
+        self.t = fObj.attrs['t'].item()
+        self.dt = fObj.attrs['dt'].item()
 
         fObj.close()
 
@@ -45,8 +45,8 @@ class ChollaSnapHead:
         fPath = ChollaBox.get_hydrofPath()
         fObj = h5py.File(fPath, 'r')
 
-        self.a = float(fObj.attrs['Current_a'])
-        self.z = float(fObj.attrs['Current_z'])
+        self.a = fObj.attrs['Current_a'].item()
+        self.z = fObj.attrs['Current_z'].item()
 
         fObj.close()
 
@@ -63,8 +63,8 @@ class ChollaSnapHead:
         fPath = ChollaBox.get_particlefPath()
         fObj = h5py.File(fPath, 'r')
 
-        self.t_particles = float(fObj.attrs['t_particles'])
-        self.dt_particles = float(fObj.attrs['dt_particles'])
+        self.t_particles = fObj.attrs['t_particles'].item()
+        self.dt_particles = fObj.attrs['dt_particles'].item()
 
         fObj.close()
 

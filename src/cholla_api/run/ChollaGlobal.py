@@ -120,15 +120,15 @@ class ChollaGlobal:
         fObj = h5py.File(box.get_hydrofPath(), 'r')
 
         # unit values used to convert from code units to cgs values
-        self.length_unit = fObj.attrs['length_unit']
-        self.mass_unit = fObj.attrs['mass_unit']
-        self.time_unit = fObj.attrs['time_unit']
+        self.length_unit = fObj.attrs['length_unit'].item()
+        self.mass_unit = fObj.attrs['mass_unit'].item()
+        self.time_unit = fObj.attrs['time_unit'].item()
         # following values can be reconstructed from previous base units
         # but can include if wanted :P
         if all_units:
-            self.density_unit = fObj.attrs['density_unit']
-            self.energy_unit = fObj.attrs['energy_unit']
-            self.velocity_unit = fObj.attrs['velocity_unit']
+            self.density_unit = fObj.attrs['density_unit'].item()
+            self.energy_unit = fObj.attrs['energy_unit'].item()
+            self.velocity_unit = fObj.attrs['velocity_unit'].item()
 
         # grab dimensions and domain
         self.dims = fObj.attrs['dims']
@@ -136,20 +136,20 @@ class ChollaGlobal:
 
         # grab dx + gamma
         self.dx = fObj.attrs['dx']
-        self.gamma = fObj.attrs['gamma']
+        self.gamma = fObj.attrs['gamma'].item()
 
         # grab cosmology params
         if self.cosmo_flag:
-            self.H0 = fObj.attrs['H0']
-            self.Omega_L = fObj.attrs['Omega_L']
-            self.Omega_M = fObj.attrs['Omega_M']
+            self.H0 = fObj.attrs['H0'].item()
+            self.Omega_L = fObj.attrs['Omega_L'].item()
+            self.Omega_M = fObj.attrs['Omega_M'].item()
         
         fObj.close()
 
         # grab particle info
         if self.particles_flag:
             fObj = h5py.File(box.get_particlefPath(), 'r')
-            self.paticle_mass_unit = fObj.attrs['particle_mass']
+            self.paticle_mass_unit = fObj.attrs['particle_mass'].item()
             fObj.close()
 
 
