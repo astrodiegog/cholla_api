@@ -351,12 +351,16 @@ class ChollaHydroCalculator:
             cosmological simulations
         
         Args:
-            log_temp (arr): log-base10 of the gas temperature
-            log_temp (arr): log-base10 of the gas overdensity
+            log_temp (arr): 1D log-base10 of the gas temperature
+            log_temp (arr): 1D log-base10 of the gas overdensity
         Returns:
             (tuple): 2D histogram, bin edges along 1st dimension, and bin edges 
                 along 2nd dimension
         '''
+
+        assert log_temp.ndim == 1
+        assert log_overdensity.ndim == 1
+
         min_loverdensity, max_loverdensity = -2, 4
         min_ltemp, max_ltemp = 2, 8
         # min_ltemp, max_ltemp = 8, 14

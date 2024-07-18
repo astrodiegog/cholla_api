@@ -215,8 +215,8 @@ class ChollaBoxHydroCalc:
         '''
 
         return self.Calculator.create_phase(np.log10(self.get_gastemp(gamma, mu, 
-                                                                      velocity_unit)),
-                                            np.log10(self.get_overdensity() ))
+                                                                      velocity_unit)).ravel() ,
+                                            np.log10(self.get_overdensity()).ravel() )
 
 
 
