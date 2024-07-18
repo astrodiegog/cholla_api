@@ -202,5 +202,21 @@ class ChollaBoxHydroCalc:
                                                                           self.Calculator.dtype),
                                                    2)
     
+    def get_phasespace(self, gamma, mu, velocity_unit):
+        '''
+        Calculate and return phase space for Box
+
+        Args:
+            gamma (float): ratio of specific heats
+            mu (float): mean molecular weight in amu
+            velocity_unit (float): unit conversion from velocity code units to cgs
+        Returns:
+            (arr)
+        '''
+
+        return self.Calculator.create_phase(np.log10(self.get_gastemp(gamma, mu, 
+                                                                      velocity_unit)),
+                                            np.log10(self.get_overdensity() ))
+
 
 
