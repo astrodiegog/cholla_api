@@ -211,7 +211,7 @@ class ChollaBoxHydroCalc:
             mu (float): mean molecular weight in amu
             velocity_unit (float): unit conversion from velocity code units to cgs
         Returns:
-            (arr)
+            (tuple): phase space, overdensity bin edges, temp bin edges
         '''
 
         return self.Calculator.create_phase(np.log10(self.get_gastemp(gamma, mu, 
