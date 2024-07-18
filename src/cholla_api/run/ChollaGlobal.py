@@ -143,6 +143,9 @@ class ChollaGlobal:
             self.H0 = fObj.attrs['H0'].item()
             self.Omega_L = fObj.attrs['Omega_L'].item()
             self.Omega_M = fObj.attrs['Omega_M'].item()
+            if all_units:
+                # Brant Robertson shared the velocity unit conversion
+                self.velocity_unit = 1.0e5 # km to cm
         
         fObj.close()
 
