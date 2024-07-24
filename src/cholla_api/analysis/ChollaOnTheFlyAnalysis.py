@@ -222,13 +222,13 @@ class ChollaOnTheFlyAnalysis:
         self.OTFAnalysisfPath = AnalysisPath + '/' + str(nAnalysis)
 
         # current implementation only works for cube grid
-        assert ChollaGrid.nx_total == ChollaGrid.ny_total
-        assert ChollaGrid.nx_total == ChollaGrid.nz_total
+        assert ChollaGrid.nx_global == ChollaGrid.ny_global
+        assert ChollaGrid.nx_global == ChollaGrid.nz_global
         assert ChollaGrid.Lx == ChollaGrid.Ly
         assert ChollaGrid.Lx == ChollaGrid.Lz
 
-        self.n_fft = int(ChollaGrid.nx_total / 2 + 1)
-        self.n_los = ChollaGrid.nx_total
+        self.n_fft = int(ChollaGrid.nx_global / 2 + 1)
+        self.n_los = ChollaGrid.nx_global
         dx = ChollaGrid.dx / 1e3 # convert kpc --> Mpc
 
         # set cosmology params
