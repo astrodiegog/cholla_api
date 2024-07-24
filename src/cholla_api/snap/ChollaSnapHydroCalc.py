@@ -3,6 +3,7 @@ import numpy as np
 
 from cholla_api.analysis.ChollaHydroCalculator import ChollaHydroCalculator
 from cholla_api.data.ChollaBox import ChollaBox
+from cholla_api.data.ChollaBoxHydroCalc import ChollaBoxHydroCalc
 
 
 class ChollaSnapHydroCalc:
@@ -236,8 +237,8 @@ class ChollaSnapHydroCalc:
         '''
         
         if self.boxcalc:
-            nx_snap = self.Calculator.create_arr((self.Grid.ny_global, 
-                                                  self.Grid.nz_global))
+            nx_snap = self.Calculator.create_subarr((self.Grid.ny_global, 
+                                                     self.Grid.nz_global))
 
             for boxhead in self.Grid.get_BoxHeads():
                 box = ChollaBox(self.Snap.SnapPath, boxhead)
@@ -269,8 +270,8 @@ class ChollaSnapHydroCalc:
         '''
 
         if self.boxcalc:
-            ny_snap = self.Calculator.create_arr((self.Grid.nx_global,
-                                                  self.Grid.nz_global))
+            ny_snap = self.Calculator.create_subarr((self.Grid.nx_global,
+                                                     self.Grid.nz_global))
 
             for boxhead in self.Grid.get_BoxHeads():
                 box = ChollaBox(self.Snap.SnapPath, boxhead)
@@ -302,8 +303,8 @@ class ChollaSnapHydroCalc:
         '''
 
         if self.boxcalc:
-            nz_snap = self.Calculator.create_arr((self.Grid.nx_global,
-                                                  self.Grid.ny_global))
+            nz_snap = self.Calculator.create_subarr((self.Grid.nx_global,
+                                                     self.Grid.ny_global))
 
             for boxhead in self.Grid.get_BoxHeads():
                 box = ChollaBox(self.Snap.SnapPath, boxhead)
@@ -339,7 +340,7 @@ class ChollaSnapHydroCalc:
         '''
 
         if self.boxcalc:
-            phasespace_snap = np.zeros((49,49), dtype=int)
+            phasespace_snap = self.Calculator.create_subarr((49,49))
 
             for boxhead in self.Grid.get_BoxHeads():
                 box = ChollaBox(self.Snap.SnapPath, boxhead)
