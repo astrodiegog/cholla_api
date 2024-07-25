@@ -378,7 +378,7 @@ class ChollaOnTheFlySkewers:
             ...
         '''
 
-        fObj = h5py.File(self.OTFAnalysisfPath, 'r')
+        fObj = h5py.File(self.OTFSkewersfPath, 'r')
 
         self.Omega_R = fObj.attrs['Omega_R'].item()
         self.Omega_M = fObj.attrs['Omega_M'].item()
