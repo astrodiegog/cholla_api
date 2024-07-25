@@ -428,7 +428,7 @@ class ChollaOnTheFlySkewers:
         OTFSkewersxHead = ChollaOnTheFlySkewers_iHead(self.nx, self.ny, self.nz,
                                                       nstride, self.xskew_str)
 
-        OTFSkewerx = ChollaOnTheFlySkewers_i(OTFSkewersxHead, self.fPath)
+        OTFSkewerx = ChollaOnTheFlySkewers_i(OTFSkewersxHead, self.OTFSkewersfPath)
 
         return OTFSkewerx
 
