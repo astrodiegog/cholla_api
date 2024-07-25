@@ -131,7 +131,7 @@ class ChollaOnTheFlyPowerSpectrum:
 
         return arr
 
-    def test_kvals(self, dtype=np.float32):
+    def test_kvals(self, high_precision=np.float64):
         '''
         Make sure the calculation of k-centers agrees with analysis output
 
@@ -141,13 +141,14 @@ class ChollaOnTheFlyPowerSpectrum:
             (bool): whether a k-value doesn't match up
         '''
         
-        kcenters_output = np.zeros(self.OTFPowerSpectrumHead.n_bins, dtype=dtype)
+        kcenters_output = np.zeros(self.OTFPowerSpectrumHead.n_bins, 
+                                   dtype=high_precision)
         fObj = h5py.File(self.fPath, 'r')
         arr[:] = fObj['lya_statistics']['power_spectrum'].get(self.kcenters_key)
         fObj.close()
 
         # TODO: MAKE SURE THE TWO ARRAYS ARE OF TEH SAME SHAPE TOO!
-        kcenters = self.get_kvals(dtype=dtype)
+        kcenters = self.get_kvals(dtype=high_precision)
         if (not np.array_equal(kcenters_output, kcenters) ):
             # find the indices where they don't match up
             failingk_inds = np.argwhere(kcenters_output != kcenters).flatten()
