@@ -347,7 +347,7 @@ class ChollaOnTheFlyAnalysis:
             (arr): phase space array
         '''
 
-        return self.get_phase_space_obj().get_phasespace(dtype=dtype)
+        return self.get_phasespace_obj().get_phasespace(dtype=dtype)
         
     def get_kvals(self, dlogk, dtype=np.float32):
         '''
