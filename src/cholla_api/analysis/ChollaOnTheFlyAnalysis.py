@@ -23,7 +23,7 @@ class ChollaOnTheFlyPowerSpectrumHead:
         self.dvHubble = dvHubble
 
         self.l_kmin = np.log10( (2 * np.pi) / (self.n_los * self.dvHubble) )
-        self.l_kmax = np.log10( (2 * np.pi * (n_fft - 1) ) / (self.n_los * self.dvHubble) )
+        self.l_kmax = np.log10( (2 * np.pi * (self.n_fft - 1) ) / (self.n_los * self.dvHubble) )
         self.l_kstart = np.log10(0.99) + self.l_kmin
         self.n_bins = int(1 + ( (self.l_kmax - self.l_kstart) / self.dlogk ) )
 
