@@ -219,7 +219,7 @@ class ChollaOnTheFlyAnalysis:
     '''
 
     def __init__(self, nAnalysis, AnalysisPath, ChollaGrid):
-        self.OTFAnalysisfPath = AnalysisPath + '/' + str(nAnalysis)
+        self.OTFAnalysisfPath = AnalysisPath + '/' + str(nAnalysis) + '_analysis.h5'
 
         # current implementation only works for cube grid
         assert ChollaGrid.nx_global == ChollaGrid.ny_global
@@ -292,7 +292,7 @@ class ChollaOnTheFlyAnalysis:
         a3 = a2 * self.current_a
         a4 = a3 * self.current_a
         DE_factor = (self.current_a)**(-3. * (1. + self.w0 + self.wa))
-        DE_factor *= np.exp(-3. * (self.wa * (1. - a)))
+        DE_factor *= np.exp(-3. * (self.wa * (1. - self.current_a)))
         
         H0_factor = (self.Omega_R / a4) + (self.Omega_M / a3) 
         H0_factor += (self.OmegaK / a2) + (self.Omega_L * DE_factor)
