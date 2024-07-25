@@ -432,3 +432,39 @@ class ChollaOnTheFlySkewers:
 
         return OTFSkewerx
 
+
+    def get_skewersy_obj(self, nstride):
+        '''
+        Return ChollaOnTheFlySkewers_i object of the y-skewers
+
+        Args:
+            - n_stride (int): stride cell number between skewers along y-dim
+        Return:
+            OTFSkewery (ChollaOnTheFlySkewers_i): skewer object
+        '''
+
+        OTFSkewersyHead = ChollaOnTheFlySkewers_iHead(self.ny, self.nx, self.nz,
+                                                      nstride, self.yskew_str)
+
+        OTFSkewery = ChollaOnTheFlySkewers_i(OTFSkewersyHead, self.OTFSkewersfPath)
+
+        return OTFSkewery
+
+    def get_skewersz_obj(self, nstride):
+        '''
+        Return ChollaOnTheFlySkewers_i object of the z-skewers
+
+        Args:
+            - n_stride (int): stride cell number between skewers along y-dim
+        Return:
+            OTFSkewerz (ChollaOnTheFlySkewers_i): skewer object
+        '''
+
+        OTFSkewerszHead = ChollaOnTheFlySkewers_iHead(self.ny, self.nx, self.nz,
+                                                      nstride, self.zskew_str)
+
+        OTFSkewerz = ChollaOnTheFlySkewers_i(OTFSkewerszHead, self.OTFSkewersfPath)
+
+        return OTFSkewerz
+
+
