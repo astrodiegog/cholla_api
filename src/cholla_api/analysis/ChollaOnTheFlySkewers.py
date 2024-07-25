@@ -302,7 +302,7 @@ class ChollaOnTheFlySkewers_i:
             OTFSkewer (ChollaOnTheFlySkewer): skewer object
         '''
         OTFSkewerHead = ChollaOnTheFlySkewerHead(skewid, self.OTFSkewersiHead.n_i, 
-                                                 self.ChollaOTFSkewersiHead.skew_key)
+                                                 self.OTFSkewersiHead.skew_key)
 
         return ChollaOnTheFlySkewer(OTFSkewerHead, self.fPath)
 
