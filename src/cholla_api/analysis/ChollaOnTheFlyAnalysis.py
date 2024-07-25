@@ -22,8 +22,8 @@ class ChollaOnTheFlyPowerSpectrumHead:
         self.n_los = nlos
         self.dvHubble = dvHubble
 
-        self.l_kmin = np.log10( (2 * np.pi) / (self.n_los * self.dvHubble) )
-        self.l_kmax = np.log10( (2 * np.pi * (self.n_fft - 1) ) / (self.n_los * self.dvHubble) )
+        self.l_kmin = np.log10( (2. * np.pi) / (self.n_los * self.dvHubble) )
+        self.l_kmax = np.log10( (2. * np.pi * (self.n_fft - 1.) ) / (self.n_los * self.dvHubble) )
         self.l_kstart = np.log10(0.99) + self.l_kmin
         self.n_bins = int(1 + ( (self.l_kmax - self.l_kstart) / self.dlogk ) )
 
@@ -110,7 +110,7 @@ class ChollaOnTheFlyPowerSpectrum:
         l_kstart = self.OTFPowerSpectrumHead.l_kstart
         dlogk = self.OTFPowerSpectrumHead.dlogk
 
-        kcenters[:] = 10**(l_kstart + (dlogk) * (iter_arr + 1/2) )
+        kcenters[:] = 10**(l_kstart + (dlogk) * (iter_arr + 0.5) )
 
         return kcenters 
 
@@ -236,7 +236,7 @@ class ChollaOnTheFlyAnalysis:
 
         # grab current hubble param & info needed to calculate hubble flow
         H = self.get_currH()
-        cosmoh = self.H0 / 100
+        cosmoh = self.H0 / 100.
         dxproper = dx * self.current_a / cosmoh
 
         # calculate hubble flow through a cell
