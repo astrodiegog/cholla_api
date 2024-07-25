@@ -211,8 +211,7 @@ class ChollaOnTheFlyAnalysis:
             access data for that output
 
         Initialized with:
-        - ChollaOTFAnalysisHead (ChollaOnTheAnalysisHead): header information 
-            for analysis output
+        - nAnalysis (int): number of the analysis output
         - AnalysisPath (str): directory path to analysis output files
         - ChollaGrid (ChollaGrid): grid holding domain information
 
