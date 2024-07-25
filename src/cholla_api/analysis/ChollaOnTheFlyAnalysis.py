@@ -40,9 +40,9 @@ class ChollaOnTheFlyPowerSpectrumHead:
         fPath = ChollaOTFPowerSpectrum.fPath
         fObj = h5py.File(fPath, 'r')
 
-        self.HI_flux_mean = fObj['lya_statistics'].attrs[''].item()
-        self.HeII_flux_mean = fObj['lya_statistics'].attrs[''].item()
-        self.n_skews = fObj['lya_statistics'].attrs[''].item()
+        self.HI_flux_mean = fObj['lya_statistics'].attrs['Flux_mean_HI'].item()
+        self.HeII_flux_mean = fObj['lya_statistics'].attrs['Flux_mean_HeII'].item()
+        self.n_skews = fObj['lya_statistics'].attrs['n_skewers'].item()
 
         fObj.close()
 
@@ -292,12 +292,12 @@ class ChollaOnTheFlyAnalysis:
         a3 = a2 * self.current_a
         a4 = a3 * self.current_a
         DE_factor = (self.current_a)**(-3. * (1. + self.w0 + self.wa))
-        DE_factor *= np.exp(-3. * (self.wa * (1. - self.current_a)))
+        DE_factor *= np.exp(-3. * self.wa * (1. - self.current_a))
         
         H0_factor = (self.Omega_R / a4) + (self.Omega_M / a3) 
         H0_factor += (self.Omega_K / a2) + (self.Omega_L * DE_factor)
        
-        return self.H0 * H0_factor
+        return self.H0 * np.sqrt(H0_factor)
 
     def get_powerspectrum_obj(self, dlogk):
         '''
