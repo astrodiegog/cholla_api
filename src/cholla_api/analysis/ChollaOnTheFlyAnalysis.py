@@ -295,7 +295,7 @@ class ChollaOnTheFlyAnalysis:
         DE_factor *= np.exp(-3. * (self.wa * (1. - self.current_a)))
         
         H0_factor = (self.Omega_R / a4) + (self.Omega_M / a3) 
-        H0_factor += (self.OmegaK / a2) + (self.Omega_L * DE_factor)
+        H0_factor += (self.Omega_K / a2) + (self.Omega_L * DE_factor)
        
         return self.H0 * H0_factor
 
