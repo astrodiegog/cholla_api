@@ -144,7 +144,7 @@ class ChollaOnTheFlyPowerSpectrum:
         kcenters_output = np.zeros(self.OTFPowerSpectrumHead.n_bins, 
                                    dtype=high_precision)
         fObj = h5py.File(self.fPath, 'r')
-        arr[:] = fObj['lya_statistics']['power_spectrum'].get(self.kcenters_key)
+        kcenters_output[:] = fObj['lya_statistics']['power_spectrum'].get(self.kcenters_key)
         fObj.close()
 
         # TODO: MAKE SURE THE TWO ARRAYS ARE OF TEH SAME SHAPE TOO!
