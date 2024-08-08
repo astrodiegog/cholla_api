@@ -107,7 +107,7 @@ class ChollaSkewerxGlobal:
 
         # save j, k coordinates as attrs
         self.j = self.skewGlobalHead.get_globalj()
-        self.k = self.skewGlobalhead.get_globalk()
+        self.k = self.skewGlobalHead.get_globalk()
 
         for curr_nlosproc in range(self.skewGlobalHead.nlos_proc):
             # starting x coordinate for skewer within current LOS process
