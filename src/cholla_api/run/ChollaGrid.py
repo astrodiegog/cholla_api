@@ -259,4 +259,44 @@ class ChollaGrid:
         return tuple(boxheads)
     
 
+    def get_boxnum_ijk(self, i, j, k):
+        '''
+        Return the box number that an ijk cell resides in
+
+        Args:
+            i (int): x-dimension of cell
+            j (int): y-dimension of cell
+            k (int): z-dimension of cell
+        Returns:
+            (int): number of Box
+        '''
+        
+        x_decomp = i // self.nx_local
+        y_decomp = j // self.ny_local
+        z_decomp = k // self.nz_local
+
+        y_offset = y_decomp * self.nproc_x
+        z_offset = z_decomp * self.nproc_x * self.nproc_y
+
+        return int(x_decomp + y_offset + z_offset)
+
+
+    def get_BoxHead_ijk(self, i, j, k):
+        '''
+        Return the ChollaBoxHead object that cell with ijk coordinates
+
+        Args:
+            i (int): x-dimension of cell
+            j (int): y-dimension of cell
+            k (int): z-dimension of cell
+        Return:
+            boxhead (ChollaBoxHead): BoxHead for this object
+        '''
+
+        nBox = self.get_boxnum_ijk(i,j,k)
+        boxhead = self.get_BoxHead(nBox)
+
+        return boxhead
+
+
 
