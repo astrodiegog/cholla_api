@@ -287,3 +287,5 @@ class ChollaSkewerxAnalysis:
         
         skewglobal = ChollaSkewerxGlobal(skewxglobalhead, self.SnapPath, self.grid)
 
+        return skewglobal
+
