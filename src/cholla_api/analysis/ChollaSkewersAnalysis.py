@@ -202,7 +202,7 @@ class ChollaSkewerAnalysisHead:
 
         face_id = int(global_id // self.nSkewersLocal)
         face_joffset = int( (face_id % self.nFaces_j) * self.nj_local)
-        face_koffset = int( (face_id // self.nFaces_j) * self.nz_local)
+        face_koffset = int( (face_id // self.nFaces_j) * self.nk_local)
 
         skewfacehead = ChollaSkewerFaceHead(face_id, face_joffset, face_koffset)
 
