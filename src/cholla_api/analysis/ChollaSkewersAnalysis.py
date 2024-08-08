@@ -1,6 +1,7 @@
 import numpy as np
 import h5py
 
+from cholla_api.data.ChollaBox import ChollaBox
 
 class ChollaSkewerLocalFaceHead:
     '''
@@ -129,7 +130,7 @@ class ChollaSkewerxGlobal:
             arr (arr): requested dataset
         '''
 
-        arr = np.zeros(self.skewglobalHead.n_los, dtype=dtype)
+        arr = np.zeros(self.skewGlobalHead.n_los, dtype=dtype)
 
         for boxhead in self.boxheads:
             box = ChollaBox(self.SnapPath, boxhead)
