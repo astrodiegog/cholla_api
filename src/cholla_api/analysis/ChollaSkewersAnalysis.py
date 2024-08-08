@@ -106,14 +106,14 @@ class ChollaSkewerxGlobal:
         # save all of the ChollaBoxHead objects that this skewer passes through
         boxheads = self.skewGlobalHead.nlos_proc * [None]
 
-        # save j, k coordinates as attrs
-        self.j = self.skewGlobalHead.get_globalj()
-        self.k = self.skewGlobalHead.get_globalk()
+        # grab j, k coordinates
+        j = self.skewGlobalHead.get_globalj()
+        k = self.skewGlobalHead.get_globalk()
 
         for curr_nlosproc in range(self.skewGlobalHead.nlos_proc):
             # starting x coordinate for skewer within current LOS process
             xstart = int(self.nx_local * curr_nlosproc)
-            boxhead = ChollaGrid.get_BoxHead_ijk(xstart, self.j, self.k)
+            boxhead = ChollaGrid.get_BoxHead_ijk(xstart, j, k)
             boxheads[curr_nlosproc] = boxhead
         
         self.boxheads = tuple(boxheads)
@@ -131,6 +131,8 @@ class ChollaSkewerxGlobal:
         '''
 
         arr = np.zeros(self.skewGlobalHead.n_los, dtype=dtype)
+        j_local = self.skewGlobalHead.skewLocalFaceHead.localface_joffset
+        k_local = self.skewGlobalHead.skewLocalFaceHead.localface_koffset
 
         for boxhead in self.boxheads:
             box = ChollaBox(self.SnapPath, boxhead)
@@ -140,7 +142,7 @@ class ChollaSkewerxGlobal:
                 assert box.check_hydrokey(key)
 
             fObj = h5py.File(box.get_hydrofPath(), 'r')
-            arr[boxhead.offset[0] : boxhead.offset[0] + boxhead.local_dims[0]] = fObj.get(key)[:, self.j, self.k]
+            arr[boxhead.offset[0] : boxhead.offset[0] + boxhead.local_dims[0]] = fObj.get(key)[:, j_local, k_local]
             fObj.close()
             
 
