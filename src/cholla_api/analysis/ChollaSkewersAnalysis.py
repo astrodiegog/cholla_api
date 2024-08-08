@@ -113,7 +113,7 @@ class ChollaSkewerxGlobal:
             # starting x coordinate for skewer within current LOS process
             xstart = int(self.nx_local * curr_nlosproc)
             boxhead = ChollaGrid.get_BoxHead_ijk(xstart, self.j, self.k)
-            boxheads[curr_nlocproc] = boxhead
+            boxheads[curr_nlosproc] = boxhead
         
         self.boxheads = tuple(boxheads)
 
