@@ -171,6 +171,7 @@ class ChollaSkewerAnalysisHead:
     '''
     def __init__(self, n_stride, nlos_global, nj_global, nk_global, nlos_proc, nj_proc, nk_proc):
         self.n_stride = n_stride
+        self.nlos_global = nlos_global
         self.nlos_proc = nlos_proc
         self.nj_proc = nj_proc
 
@@ -244,7 +245,8 @@ class ChollaSkewerAnalysisHead:
         facehead = self.get_facehead(global_id)
         localhead = self.get_localfacehead(global_id)
 
-        skewglobalhead = ChollaSkewerGlobalHead(facehead, localhead)
+        skewglobalhead = ChollaSkewerGlobalHead(global_id, facehead, localhead, 
+                                                self.nlos_global, self.nlos_proc)
 
         return skewglobalhead
        
