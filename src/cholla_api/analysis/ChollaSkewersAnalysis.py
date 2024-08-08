@@ -149,6 +149,73 @@ class ChollaSkewerxGlobal:
         return arr
 
 
+class ChollaSkeweryGlobal:
+    '''
+    Cholla Skewer y Global object
+        Holds information regarding skewer along x direction including methods
+            to grab data along skewer.
+        For the y-skewer, in order to match up with skewers outputs from Cholla,
+            we need to grab data in order of (j, i, k). For details of 
+            implementation, see src/analysis/lya_statistics.cpp Line 1264
+
+        Initialized with:
+        - ChollaSkewerGlobalHead (ChollaSkewerGlobalHead): global head object
+        - SnapPath (str): path to snapshot directory
+        - ChollaGrid (ChollaGrid): grid object
+    '''
+
+    def __init__(self, ChollaSkewerGlobalHead, SnapPath, ChollaGrid):
+        self.skewGlobalHead = ChollaSkewerGlobalHead
+        self.SnapPath = SnapPath
+
+        self.ny_local = int(self.skewGlobalHead.n_los / self.skewGlobalHead.nlos_proc)
+
+        # save all of the ChollaBoxHead objects that this skewer passes through
+        boxheads = self.skewGlobalHead.nlos_proc * [None]
+
+        # grab j, k coordinates
+        j = self.skewGlobalHead.get_globalj()
+        k = self.skewGlobalHead.get_globalk()
+
+        for curr_nlosproc in range(self.skewGlobalHead.nlos_proc):
+            # starting x coordinate for skewer within current LOS process
+            ystart = int(self.ny_local * curr_nlosproc)
+            boxhead = ChollaGrid.get_BoxHead_ijk(j, ystart, k)
+            boxheads[curr_nlosproc] = boxhead
+
+        self.boxheads = tuple(boxheads)
+
+    
+    def get_hydrodata(self, key, dtype=np.float32):
+        '''
+        Return a specific hydro dataset along skewer
+
+        Args:
+            key (str): key to access data from hydro hdf5 file
+            dtype (np type): (optional) numpy precision to use
+        Returns:
+            arr (arr): requested dataset
+        '''
+
+        arr = np.zeros(self.skewGlobalHead.n_los, dtype=dtype)
+        j_local = self.skewGlobalHead.skewLocalFaceHead.localface_joffset
+        k_local = self.skewGlobalHead.skewLocalFaceHead.localface_koffset
+
+        for boxhead in self.boxheads:
+            box = ChollaBox(self.SnapPath, boxhead)
+
+            # check key with boxhead having 0 y-offset
+            if (boxhead.offset[1] == 0):
+                assert box.check_hydrokey(key)
+
+            fObj = h5py.File(box.get_hydrofPath(), 'r')
+            arr[boxhead.offset[1] : boxhead.offset[1] + boxhead.local_dims[1]] = fObj.get(key)[j_local, :, k_local]
+            fObj.close()
+
+
+        return arr
+
+
 
 
 
@@ -291,4 +358,45 @@ class ChollaSkewerxAnalysis:
         skewglobal = ChollaSkewerxGlobal(skewxglobalhead, self.SnapPath, self.grid)
 
         return skewglobal
+
+
+class ChollaSkeweryAnalysis:
+    '''
+    Cholla Skewer y Analysis object
+        Holds information regarding skewer analysis along y direction including
+            methods to grab ChollaSkeweryGlobal objects
+        For the y-skewers, in order to match up with skewers outputs from Cholla,
+            we need to grab data in order of (j, i, k). For details of 
+            implementation, see src/analysis/lya_statistics.cpp Line 1264
+
+        Initialized with:
+        - n_stride (int): stride cell number between skewers
+        - SnapPath (str): path to snapshot directory
+        - ChollaGrid (ChollaGrid): grid object
+    '''
+
+    def __init__(self, n_stride, SnapPath, ChollaGrid):
+        self.skewHead = ChollaSkewerAnalysisHead(n_stride,
+                                                 ChollaGrid.ny_global, ChollaGrid.nx_global, ChollaGrid.nz_global,
+                                                 ChollaGrid.nproc_y, ChollaGrid.nproc_x, ChollaGrid.nproc_z)
+        self.SnapPath = SnapPath
+        self.grid = ChollaGrid
+
+    def get_skewer(self, global_id):
+        '''
+        Returns Cholla Skewer y Global object corresponding to global skewer id
+
+        Args:
+            global_id (int): id of the global skewer
+        Return:
+            skewglobal (ChollaSkeweryGlobal): SkeweryGlobal for this global 
+                skewer id
+        '''
+
+        skewyglobalhead = self.skewHead.get_globalhead(global_id)
+
+        skewglobal = ChollaSkeweryGlobal(skewyglobalhead, self.SnapPath, self.grid)
+
+        return skewglobal
+
 
