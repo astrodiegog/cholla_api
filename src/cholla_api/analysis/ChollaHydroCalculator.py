@@ -236,7 +236,34 @@ class ChollaHydroCalculator:
         arr[:] = (energy/density) - (0.5)*(self.velmag(density, mom_x, mom_y, mom_z))**2
         
         return arr
-    
+
+
+    def mu(self, H_density, He_density, e_density):
+        '''
+        Calculate the mean molecular weight in amu
+        
+        Args:
+            H_density (arr): Hydrogen density
+            He_density (arr): Helium density
+            e_density (arr): electron density
+        Returns:
+            arr (arr): array that will hold data
+        '''
+        assert np.array_equal(H_density.shape, self.dims)
+        assert np.array_equal(He_density.shape, self.dims)
+        assert np.array_equal(e_density.shape, self.dims)
+
+        # initialize array with dims shape
+        arr = self.create_arr()
+
+        total_density = H_density + He_density
+        weighted_density = H_density + (He_density / 4.) + e_density
+        
+        arr[:] = total_density / weighted_density
+
+        return arr
+
+
     def gas_temp(self, gas_energy, density, gamma, mu, velocity_unit):
         '''
         Calculate the gas temperature in Kelvin
