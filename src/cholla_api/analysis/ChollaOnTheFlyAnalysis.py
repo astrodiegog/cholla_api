@@ -219,7 +219,8 @@ class ChollaOnTheFlyAnalysis:
     '''
 
     def __init__(self, nAnalysis, AnalysisPath, ChollaGrid):
-        self.OTFAnalysisfPath = AnalysisPath + '/' + str(nAnalysis) + '_analysis.h5'
+        self.nAnalysis = nAnalysis
+        self.OTFAnalysisfPath = AnalysisPath + '/' + str(self.nAnalysis) + '_analysis.h5'
 
         # current implementation only works for cube grid
         assert ChollaGrid.nx_global == ChollaGrid.ny_global
