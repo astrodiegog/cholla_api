@@ -52,6 +52,11 @@ class ChollaBox:
     '''
     Cholla Box object
         Holds information regarding the box for a specific snapshot 
+
+        Initialized with:
+            SnapPath (str): path to a snapshot
+            ChollaBoxHead (ChollaBoxHead): Cholla Box Head object connecting
+                box to rest of volume
     '''
     
     def __init__(self, SnapPath, ChollaBoxHead):
