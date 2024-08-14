@@ -75,14 +75,11 @@ class ChollaSnap:
     Cholla Snapshot object
         Holds snapshot specific information and methods to access data for that
             snapshot
-        
-        My two main get_data() functions loop over the BoxHeads and place all
-            of the requested data onto one array.
-    
-    TODO:
-        create method to load data within a requested domain. would I have to 
-            create a separate method in BoxHeads for global domain? this would
-            save having to save the local dims and offset redundant.
+            
+        Initialized with:
+            RunPath (str): path to a directory holding all snapshot directories
+            ChollaSnapHead (ChollaSnapHead): Cholla Snap Head object holding
+                snapshot specific information
     '''
     
     def __init__(self, RunPath, ChollaSnapHead):

@@ -54,7 +54,7 @@ class ChollaBox:
         Holds information regarding the box for a specific snapshot 
 
         Initialized with:
-            SnapPath (str): path to a snapshot
+            SnapPath (str): path to a snapshot directory
             ChollaBoxHead (ChollaBoxHead): Cholla Box Head object connecting
                 box to rest of volume
     '''

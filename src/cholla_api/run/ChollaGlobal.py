@@ -1,5 +1,4 @@
 import numpy as np
-from time import time
 import h5py
 
 from cholla_api.snap.ChollaSnap import ChollaSnapHead

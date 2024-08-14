@@ -1,3 +1,5 @@
 # Run
 
-This directory will hold all global information related to a simulation run
+Here we place code to define information defining a Cholla simulation run, including a grid object
+
+

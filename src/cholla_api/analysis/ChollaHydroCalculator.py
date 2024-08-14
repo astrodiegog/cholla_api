@@ -8,7 +8,12 @@ class ChollaHydroCalculator:
             shape as dims that was used to initialize this calculator. To 
             complete some analysis, this ChollaCalculator will be the mediator 
             that will act on the primitive saved values. 
-        
+
+        Initialized with:
+            dims (tuple): size of data sets to act on
+            dtype (np type): (optional) numpy precision to initialize output arrays
+
+
         Contains methods to calculate
             hydro velx, vely, velz, velmag
             pressure

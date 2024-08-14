@@ -1,4 +1,3 @@
-
 import numpy as np
 
 from cholla_api.analysis.ChollaHydroCalculator import ChollaHydroCalculator
@@ -15,8 +14,8 @@ class ChollaSnapHydroCalc:
         Initialized with:
         - ChollaSnap (ChollaSnap): ChollaSnap object
         - ChollaGrid (ChollaGrid): ChollaGrid object
-        - dtype (datatype): precision to calculate data
-        - calc_box (bool): whether to use ChollaBoxHydroCalculator object
+        - dtype (datatype): (optional) precision to calculate data
+        - calc_box (bool): (optional) whether to use ChollaBoxHydroCalculator object
 
         if calc_box is set to True, then we use ChollaBox's place_data method
             to create a global data array
