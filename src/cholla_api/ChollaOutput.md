@@ -88,13 +88,13 @@ If the Dual Energy flag was used in compiling the Cholla executable, the thermal
 
 When running with a Cholla executable compiled with the ``COSMOLOGY`` macro flag, these are some important notes regarding the attributes.
 
-**Most importantly**, the **velocity_unit** is incorrect. Currently, the conversion factor outputted is ``9.77813911e+10``, which is the conversion from the velocity unit kiloparsecs per kiloyears to centimeters per second. However, there is a conversion in the cosmology side of the code, such that the **velocity_unit** should be ``1.0e5`` which is the conversion from the velocity unit kilometers per second to centimeters per second.
+**Most importantly**, the **velocity_unit** is currently incorrect. Currently, the conversion factor outputted is ``9.77813911e+10``, which is the conversion from the velocity unit kiloparsecs per kiloyears to centimeters per second. However, there is a conversion in the cosmology side of the code, such that the **velocity_unit** should be ``1.0e5`` which is the conversion from the velocity unit kilometers per second to centimeters per second.
 
-The simulationn is ran in comoving coordinates. To get [proper distances](https://en.wikipedia.org/wiki/Comoving_and_proper_distances), need to multiply the comoving distance by the scale factor.
+The simulation is ran in comoving coordinates. To get [proper distances](https://en.wikipedia.org/wiki/Comoving_and_proper_distances), need to multiply the comoving distance by the scale factor.
 
 The code units used are:
 
-- **density_unit** : Solar masses per cubic kiloparsec in grams per cubic centimeter --> $M_{odot} \rm{kpc}^{-3} = 6.76 \times 10^{-32} \rm{g} \rm{cm}^{-3}$
+- **density_unit** : Solar masses per cubic kiloparsec in grams per cubic centimeter --> $M_{\odot} \rm{kpc}^{-3} = 6.76 \times 10^{-32} \rm{g} \rm{cm}^{-3}$
 - **length_unit** : Kiloparsecs in centimeters --> $\rm{kpc} = 3.09 \times 10^{21} \rm{cm}$
 - **time_unit** : Kiloyears in seconds --> $\rm{kyr} = 3.16 \times 10^{10} \rm{s}$
 - **mass_unit** : Solar masses in grams --> $M_{\odot} = 1.99 \times 10^{33} \rm{g}$
