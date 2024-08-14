@@ -198,7 +198,7 @@ $$
 \log_{10} k_{\rm{max}} = \log_{10} \left( \frac{2 \pi (n_{\rm{FFT}} - 1)}{n_{\rm{LOS}} \rm{d}v_{H}} \right)
 $$
 
-where $n_{\rm{FFT}} = \rm{int} ( n_x / 2 + 1 )$ is the number of FFT bins.
+where $n_{\rm{FFT}} = \rm{int} ( n_{\rm{LOS}} / 2 + 1 )$ is the number of FFT bins.
 
 In the Cholla code, we have 
 
