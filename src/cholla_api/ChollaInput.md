@@ -63,7 +63,7 @@ Going line-by-line:
 - **H0** : present-day Hubble parameter in units of [km / s / Mpc]
 - **Omega_i** : present-day energy density parameter for i-species. M, L, K, R, relate to matter, dark energy, spacial curvature, and radiation (respectively), feel free to read up on what this value means from the [Friedmann equations wikipedia page](https://en.wikipedia.org/wiki/Friedmann_equations#Density_parameter)
 - **w0** & **wa** : values that specify a time-evolving dark energy equation of state linearly with scale factor, of the form $w(a) = w_0 + w_a (1 - a)$
-- **analysis_scale_outputs_file** : path to a text file specifying when to complete Lyman $\alpha$ (Ly$\alpha$) statistics
+- **analysis_scale_outputs_file** : path to a text file specifying when to complete Lyman $\alpha$ (Ly $\alpha$) statistics
 - **analysisdir** : path to a directory to save analysis outputs
 - **lya_skewers_stride** : number of cells to jump between skewers
 - **lya_Pk_d_log_k** : differential step in log k-space
@@ -116,7 +116,7 @@ while (nproc_tmp > 1):
     index += 1
 ```
 
-Now, we have enough information to place provide each box with its own subdomain of cells to work with. For each dimension, we can set a local domain of $n_i / n_{\rm{proc},i}$, where $n_i$ is the global number of cells along the $i$-dimesion and $n_{\rm{proc},i}$ is the number of processes along the $i$-dimension. There is some funkiness in the case where the number of processes doesn't evenly divide into the total number of cells, but we will ignore that for now :P For detailed explanation, check out the source code.
+Now, we have enough information to provide each box with its own subdomain of cells to work with. For each dimension, we can set a local domain of $n_i / n_{\rm{proc},i}$, where $n_i$ is the global number of cells along the $i$-dimesion and $n_{\rm{proc},i}$ is the number of processes along the $i$-dimension. There is some funkiness in the case where the number of processes doesn't evenly divide into the total number of cells, but we will ignore that for now :P For detailed explanation, check out the source code.
 
 Okay great, we know the subdomain of a box, but we still need information about _where_ that box is within the global domain. To do this, we index each box by tiling them along the x-axis, then y-axis, then z-axis. In pseudocode...
 
@@ -147,7 +147,7 @@ for k in range(np_z):
 
 The way that these indices are assigned are in a row-major order, used by Numpy and C/C++. Read more about this style of memory allocation of multidimensional arrays in a linear manner in its [wikipedia page](https://en.wikipedia.org/wiki/Row-_and_column-major_order).
 
-Now that we have the tiling order determined and local subdomain defined, we can find the offset of a box given the box number by multiplying the local subdomain by its index along each dimension. In pseudocode...
+Now that we have the tiling order is determined and local subdomain defined, we can find the offset of a box given the box number by multiplying the local subdomain by its index along each dimension. In pseudocode...
 
 ```
 offset_x = id_x[box_num] * (nx / np_x)
@@ -164,15 +164,15 @@ To summarize,
 
 ## Skewer Decomposition
 
-When running a Cholla executable that was compiled with the ``ANALYSIS``, ``PHASE_DIAGRAM``, ``LYA_STATISTICS``, and/or ``OUTPUT_SKEWERS`` macro flags, the simulation will produce skewers of the length of the entire box to compute the one-dimensional flux power spectrum. Computing the Ly-$\alpha$ statistics is done across each xyz dimension. Each skewer's Ly-$\alpha$ statistics is a pretty time-intensive process, so we do not produce skewers for every cell. Instead, we take an $n_{\rm{stride}}$ number of cell steps between skewers. The Ly-$\alpha$ statistics is made on line 12 of the ``src/analysis/analysis.cpp``, with details in ``src/analysis/lya_statistics.cpp``.
+When running a Cholla executable that was compiled with the ``ANALYSIS``, ``PHASE_DIAGRAM``, ``LYA_STATISTICS``, and/or ``OUTPUT_SKEWERS`` macro flags, the simulation will produce skewers of the length of the entire box to compute the one-dimensional flux power spectrum. Computing the Ly $\alpha$ statistics is done across each xyz dimension. Each skewer's Ly $\alpha$ statistics is a pretty time-intensive process, so we do not produce skewers for every cell. Instead, we take an $n_{\rm{stride}}$ number of cell steps between skewers. The Ly $\alpha$ statistics code starts on line 12 of the ``src/analysis/analysis.cpp``, with details in ``src/analysis/lya_statistics.cpp``.
 
 
 For the analysis along an $i$-dimension, the total number of skewers is $N_{\rm{skewers}} = (n_j / n_{\rm{stride}}) (n_k / n_{\rm{stride}})$, where $n_{j,k}$ is the global number of cells along the $j,k$-dimension.
 
-Within some box, we have $N_{\rm{box, skewers}} = (n_{\rm{box},j} / n_{\rm{stride}}) (n_{\rm{box},k} / n_{\rm{stride}})$ number of skewers, where $n_{\rm{box},j}$ and $n_{\rm{box},j}$ are the number of cells along the $j,k$-dimension within the local domain of the box. These two values are computed on line 1364 of ``src/analysis/lya_statistics.cpp``.
+Within some box, we have $N_{\rm{box, skewers}} = (n_{\rm{box},j} / n_{\rm{stride}}) (n_{\rm{box},k} / n_{\rm{stride}})$ number of skewers, where $n_{\rm{box},j}$ and $n_{\rm{box},k}$ are the number of cells along the $j,k$-dimension within the local domain of the box. These two values are computed on line 1364 of ``src/analysis/lya_statistics.cpp``.
 
 
-Within some box, the _local_ offset along the $j$-dimension for a skewer with $\rm{id}_{\rm{local}}$ is calculated as $j_{\rm{local, offset}} = \rm{int}( \rm{id}_{\rm{local}} // ( (n_{\rm{box},j} / n_{\rm{stride}}) ) \cdot n_{\rm{stride}}) )$. The _local_ offset along the $k$-dimension is $k_{\rm{local, offset}} = \rm{int}( \rm{id}_{\rm{local}} \rm{mod} ( (n_{\rm{box},j} / n_{\rm{stride}}) ) \cdot n_{\rm{stride}}) )$. What drives these offsets is how the local skewers are tiled first along the $j$-dimension, then along the $k$-dimension. These values are computed in the function ``Grid3D::Populate_Lya_Skewers_Local`` on line 1226 of ``src/analysis/lya_statistics.cpp``.
+Within some box, the _local_ offset along the $j$-dimension for a skewer with id $\eta_{\rm{local}}$ is calculated as $j_{\rm{local, offset}} = \eta( \rm{id}_{\rm{local}} // ( (n_{\rm{box},j} / n_{\rm{stride}}) ) \cdot n_{\rm{stride}}) )$. The _local_ offset along the $k$-dimension is $k_{\rm{local, offset}} = \eta( \rm{id}_{\rm{local}} \rm{mod} ( (n_{\rm{box},j} / n_{\rm{stride}}) ) \cdot n_{\rm{stride}}) )$. What drives these offsets is how the local skewers are tiled first along the $j$-dimension, then along the $k$-dimension. These values are computed in the function ``Grid3D::Populate_Lya_Skewers_Local`` on line 1226 of ``src/analysis/lya_statistics.cpp``.
 
 Within the global $j-k$ plane, batches of $N_{\rm{box, skewers}}$ are tiled first along the $k$-dimension and $j$-dimension. For some global skewer with $\rm{id}_{\rm{global}}$, the box in which it is found is $\rm{id}_{\rm{box}} = \rm{int} (\rm{id}_{\rm{global}} // N_{\rm{box, skewers}} )$. In effect, the _global_ offsets for some box along the $j$-dimension is $j_{\rm{box, offset}} = \rm{int}( \rm{id}_{\rm{global}} \rm{mod} ( n_{\rm{proc},j} ) \cdot n_{\rm{box},j} )$. Likewise, the offset along the $k$-dimension is $k_{\rm{box, offset}} = \rm{int}( \rm{id}_{\rm{global}} // ( n_{\rm{proc},j} ) \cdot n_{\rm{box},k}) )$. These values are computed in the function ``AnalysisModule::Transfer_Skewers_Data(int axis)`` on line 1037 of ``src/analysis/lya_statistics.cpp``.
 
