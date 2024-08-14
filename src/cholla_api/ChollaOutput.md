@@ -40,7 +40,7 @@ An example tree structure with ``nprocs`` processes / boxes and ``nsnaps`` numbe
 └── nsnaps
 ```
 
-Files holding the hydro information have the name ``nsnap.h5.proc``, where ``nsnap`` and ``nproc`` specify the snapshot number and process / box number (``4.h5.213`` holds hydro information for process 213 in snapshot 4). Files holding the gravity and particles suffix the snapshot number with their respective names (``63_gravity.h5.200`` holds gravity information for process 200 in snapshot 63, ``75_particles.h5.3`` holds particle information for process 3 in snapshot 75.
+Files holding the hydro information have the name ``nsnap.h5.proc``, where ``nsnap`` and ``nproc`` specify the snapshot number and process / box number (``4.h5.213`` holds hydro information for process 213 in snapshot 4). Files holding the gravity and particles data suffix the snapshot number with their respective names (``63_gravity.h5.200`` holds gravity information for process 200 in snapshot 63, ``75_particles.h5.3`` holds particle information for process 3 in snapshot 75).
 
 
 ### Hydro Files
