@@ -54,8 +54,8 @@ The attributes that are attached are:
 - **dims** : number of grid cells in each of the three dimension for entire volume
 - **dims_local** : number of grid cells in the box
 - **offset** : number of grid cells offset from origin within the entire volume
-- **n_fields** : number of fields (conserved and scalars), further specified in ``src/grid/grid3D.h``
-- **n_step** : number of time steps take, further specified in ``src/grid/grid3D.h`` 
+- **n_fields** : number of fields (conserved and scalars) kept track during simulation, further specified in ``src/grid/grid3D.h``
+- **n_step** : number of time steps taken, further specified in ``src/grid/grid3D.h`` 
 - **nprocs** : number of processes in each of the three dimensions
 - **gamma** : ratio of specific heats 
 
