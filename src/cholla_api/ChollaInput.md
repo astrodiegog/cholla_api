@@ -192,10 +192,10 @@ $$
 \log_{10} k_{\rm{min}} = \log_{10} \left(\frac{2 \pi}{n_{\rm{LOS}} \rm{d}v_{H}} \right)
 $$
 
-where $n_{\rm{LOS}}$ is the number of line-of-sight cells and $\rm{d}v_{H}}$ is the differential Hubble flow through one cell. Likewise, the maximum is calculated as
+where $n_{\rm{LOS}}$ is the number of line-of-sight cells and $\rm{d}v_{H}$ is the differential Hubble flow through one cell. Likewise, the maximum is calculated as
 
 $$
-\log_{10} k_{\rm{max}} = \log_{10} \left(\frac{2 \pi (n_{\rm{FFT}} - 1)}{n_{\rm{LOS}} \rm{d}v_{H}} \right)
+\log_{10} k_{\rm{max}} = \log_{10} \left( \frac{2 \pi (n_{\rm{FFT}} - 1)}{n_{\rm{LOS}} \rm{d}v_{H}} \right)
 $$
 
 where $n_{\rm{FFT}} = \rm{int} ( n_x / 2 + 1 )$ is the number of FFT bins.
@@ -209,7 +209,7 @@ $$
 The number of $k$-bins is 
 
 $$
-n_{k, \rm{bins}} = \rm{int}(1 + \frac{\log_{10}(k_{\rm{max}}) - \log_{10}(k_{\rm{start}}) }{\rm{d} \log_{10} k })
+n_{k, \rm{bins}} = \rm{int} \left(1 + \frac{\log_{10}(k_{\rm{max}}) - \log_{10}(k_{\rm{start}}) }{\rm{d} \log_{10} k } \right)
 $$
 
 
