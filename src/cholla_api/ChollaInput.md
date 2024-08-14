@@ -63,7 +63,7 @@ Going line-by-line:
 - **H0** : present-day Hubble parameter in units of [km / s / Mpc]
 - **Omega_i** : present-day energy density parameter for i-species. M, L, K, R, relate to matter, dark energy, spacial curvature, and radiation (respectively), feel free to read up on what this value means from the [Friedmann equations wikipedia page](https://en.wikipedia.org/wiki/Friedmann_equations#Density_parameter)
 - **w0** & **wa** : values that specify a time-evolving dark energy equation of state linearly with scale factor, of the form $w(a) = w_0 + w_a (1 - a)$
-- **analysis_scale_outputs_file** : path to a text file specifying when to complete $\rm{Ly}-\alpha$ statistics
+- **analysis_scale_outputs_file** : path to a text file specifying when to complete Lyman $\alpha$ (Ly\alpha$) statistics
 - **analysisdir** : path to a directory to save analysis outputs
 - **lya_skewers_stride** : number of cells to jump between skewers
 - **lya_Pk_d_log_k** : differential step in log k-space
