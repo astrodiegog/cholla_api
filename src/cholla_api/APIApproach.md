@@ -1,6 +1,6 @@
 # API Approach
 
-This file is meant to describe the approach and through process behind the design choices when creating this API for Cholla simulations.
+This file is meant to describe the approach and thought process behind the design choices when creating this API for Cholla simulations.
 
 This API was developed with the idea of analyzing cosmological simulations, which means that it is simply not feasible to concatenate datasets from all processes to one large file in order to analyze a cosmological simulation. Cosmological simulations do not necessarily _need_ to be ran on multiple processes, but the API was designed with the idea that a Cholla simulation outputs data from multiple processes, specifically GPU nodes.
 
@@ -56,7 +56,7 @@ class ChollaBoxHead:
 
 This object holds the information that connects a process to the global volume.
 
-That's really cool, but it's all abstract. What if I just want to grab the data held within some a file? Well to do that, we tie this header information along with the path to a snapshot to create the ``ChollaBox`` class
+That's really cool, but it's all abstract. What if I just want to grab the data held within some file? Well to do that, we tie this header information along with the path to a snapshot to create the ``ChollaBox`` class
 
 ```bash
 class ChollaBox:
@@ -107,7 +107,7 @@ class ChollaSnap:
     '''
 ```
 
-To set some snapshot-wide information to the ``ChollaSnapHead``, we use a specific ``ChollaBox`` to grab that value. For example, the ``set_cosmoinfo(ChollaBox)`` uses the ``ChollaBox`` to attach the redshift and scale factor to the ``ChollaSnapHead``.
+To set some snapshot-wide information to the ``ChollaSnapHead``, we use a specific ``ChollaBox`` to grab that value. For example, the ``set_cosmoinfo(ChollaBox)`` method uses the ``ChollaBox`` to attach the redshift and scale factor to the ``ChollaSnapHead``.
 
 The standard naming scheme in the API is that a ``ChollaXHead`` is an abstraction of what an ``X`` object actually is, down to its barebone essentials. To grab an actual implementation of that ``X`` object, we tie it to some file path with an instance of the abstract object such that ``ChollaX`` is initialized with ``ChollaXHead`` and ``XPath``.
 
@@ -346,7 +346,7 @@ class ChollaOnTheFlyPowerSpectrumHead:
 
 ``` 
 
-An implementation of a power spectrum is tied to a specific file is specified with a ``ChollaOnTheFlyPowerSpectrum`` class
+An implementation of a power spectrum is that tied to a specific file is specified with a ``ChollaOnTheFlyPowerSpectrum`` class
 
 ```bash
 class ChollaOnTheFlyPowerSpectrum:
@@ -366,7 +366,7 @@ class ChollaOnTheFlyPowerSpectrum:
 ```
 
 
-Likewise, we have the ``ChollaOnTheFlyPhaseSpaceHead`` class holding information regarding the density and temperature limits as well as the number of histogram for axis.
+Likewise, we have the ``ChollaOnTheFlyPhaseSpaceHead`` class holding information regarding the density and temperature limits as well as the number of histogram for each axis
 
 ```bash
 class ChollaOnTheFlyPhaseSpaceHead:
@@ -407,7 +407,7 @@ class ChollaOnTheFlyPhaseSpace:
     '''
 ```
 
-To help interface with an analysis object, we have created a ``ChollaOnTheFlyAnalysis`` class 
+To help interface with an analysis file output, we have created a ``ChollaOnTheFlyAnalysis`` class 
 
 
 ```bash
@@ -430,8 +430,6 @@ class ChollaOnTheFlyAnalysis:
 
 
 
-
-
-When designing these data structures, we attempted to minimize the amount of times that a file is accessed, which is why objects have methods to grab datasets, but don't actually save data onto an instance of the object.
+When designing these data structures, we attempt to minimize the amount of times that a file is accessed, which is why objects have methods to grab datasets, but don't actually save data onto an attribute of the object.
 
 
