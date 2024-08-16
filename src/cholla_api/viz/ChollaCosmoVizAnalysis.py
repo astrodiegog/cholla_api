@@ -313,8 +313,8 @@ class ChollaCosmoVizAnalysis:
         print("Starting density plot calcs")
 
         # in units of [Kelvin]
-        l_histmin, l_histmax = 3.0, 6.0
-        l_cbarmin, l_cbarmax = 6.0, 9.0
+        l_histmin, l_histmax = 3.0, 7.0
+        l_cbarmin, l_cbarmax = 6.0, 10.0
         # set the top-left histogram bins
         l_Thist_bins = np.linspace(l_histmin, l_histmax, self.nhist_bins)
 
