@@ -161,8 +161,8 @@ There are 6 times where ``rho_0_gas`` (defined in ``Cosmology::Initialize`` of `
 
 Each of these instances of using ``rho_0_gas`` show the variable to convert from code units to cgs units.
 
--- **velocity_unit** : the velocity units within the code is kilometers per second to centimeters per second --> $\rm{km} / \rm{s} = 10^5 \rm{cm} / \rm{s}$
--- **energy_unit** : the energy unit goes as the velocity unit squared --? $\rm{km}^2 / \rm{s}^2 = 10^10 \rm{cm}^2 / \rm{s}^2$
+- **velocity_unit** : kilometers per second to centimeters per second --> $\rm{km} / \rm{s} = 10^5 \rm{cm} / \rm{s}$
+- **energy_unit** : energy unit goes as velocity unit squared --> $\rm{km}^2 / \rm{s}^2 = 10^{10} \rm{cm}^2 / \rm{s}^2$
 
 The simulation is ran in comoving coordinates. To get [proper distances](https://en.wikipedia.org/wiki/Comoving_and_proper_distances), need to multiply the comoving distance by the scale factor. Likewise, to get proper densities, need to divide the physical density by the scale factor cubed
 
