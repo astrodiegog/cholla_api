@@ -98,7 +98,7 @@ The code units used that are attached to the attributes:
 
 **HOWEVER**: this is not what the actual units of the values that are saved. The _actual_ values used are
 
-- **density_unit** : present-day critical matter energy density in cosmological units ($h^2 M_{\odot} \rm{kpc}^-3$) --> 
+- **density_unit** : present-day critical matter energy density in cosmological units ($h^2 M_{\odot} \rm{kpc}^{-3}$) --> 
 
 $$
 \rho_{0, \rm{gas}} = \frac{3H_0^2}{8 \pi G}
@@ -114,16 +114,16 @@ $$
 \rho_{0, \rm{gas}} = \frac{3H_0}{8 \pi G} \frac{\rm{km}^2  \rm{Mpc}^{-2} }{\rm{cm}^{3} \rm{g}^{-1} } = \frac{3H_0}{8 \pi G} \frac{\rm{g}}{\rm{cm}^{3}} \left( \frac{\rm{km}}{\rm{Mpc}} \right)^2
 $$
 
-But those aren't the units the Cholla code uses, we need to transform this to $h^2 M_{\odot} \rm{kpc}^-3$
+But those aren't the units the Cholla code uses, we need to transform this to $h^2 M_{\odot} \rm{kpc}^{-3}$
 
 $$
-\rho_{0, \rm{gas}} = \frac{3H_0}{8 \pi G} \left( \frac{\rm{km}}{\rm{Mpc}} \right)^2  \frac{\rm{g}}{\rm{cm}^{3}} \frac{M_{\odot}}{1.99 \times 10^{33} \rm{g}} \left( \frac{3.09 \times 10^{21} \rm{cm}}{\rm{kpc}} \right)^3
+\rho_{0, \rm{gas}} = \frac{3H_0}{8 \pi G} \left( \frac{\rm{km}}{\rm{Mpc}} \right)^2  \left(\frac{\rm{g}}{\rm{cm}^{3}}\right) \left(\frac{M_{\odot}}{1.99 \times 10^{33} \rm{g}}\right) \left( \frac{3.09 \times 10^{21} \rm{cm}}{\rm{kpc}} \right)^3
 $$
 
 Further simplifying...
 
 $$
-\rho_{0, \rm{gas}} = \frac{3H_0}{8 \pi G} \left( \frac{1.00 \times 10^{5} \rm{cm} }{ 3.09 \times 10^{24} \rm{cm} } \right)^2 \frac{\rm{g}}{{1.99 \times 10^{33} \rm{g}} \left( \frac{3.09 \times 10^{21} \rm{cm}}{\rm{cm}} \right)^3 M_{\odot} \rm{kpc}^-3
+\rho_{0, \rm{gas}} = \frac{3H_0}{8 \pi G} \left( \frac{1.00 \times 10^{5} \rm{cm} }{ 3.09 \times 10^{24} \rm{cm} } \right)^2 \frac{\rm{g}}{1.99 \times 10^{33} \rm{g}} \left( \frac{3.09 \times 10^{21} \rm{cm}}{\rm{cm}} \right)^3 M_{\odot} \rm{kpc}^-3
 $$
 
 
