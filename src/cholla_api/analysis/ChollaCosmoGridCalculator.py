@@ -27,28 +27,7 @@ class ChollaCosmoGridCalculator:
         assert ChollaGrid.Lx == ChollaGrid.Ly
         assert ChollaGrid.Lx == ChollaGrid.Lz
 
-        self.nx = ChollaGrid.nx_global
-        self.ny = ChollaGrid.ny_global
-        self.nz = ChollaGrid.nz_global
-
-        # present-day energy density for matter, radiation, curvature, and Dark Energy
-        self.OmegaM = OmegaM
-        self.OmegaR = OmegaR
-        self.OmegaK = OmegaK
-        self.OmegaL = OmegaL
-
-        # Dark Energy equation of state like w(a) = w0 + wa(1-a)
-        self.w0, self.wa = w0, wa
-
-        # present-day hubble parameter in (km/s/Mpc)
-        self.H0 = H0
-
-        # some useful units
-        self.cosmoh = self.H0 / 100.
-
-        # NOTE: dx is saved in [kiloparsecs] ! convert to [h^-1 kpc]
-        self.dx_h = ChollaGrid.dx / self.cosmoh
-
+        # start with constants !
         self.Msun_cgs = 1.98847e33 # Solar Mass in grams
         self.kpc_cgs = 3.0857e21 # kiloparsecs in centimeters
         self.Mpc_cgs = self.kpc_cgs * 1.e3 # Megaparsecs in centimeters
@@ -63,19 +42,69 @@ class ChollaCosmoGridCalculator:
         self.kpc3_cgs = self.kpc_cgs * self.kpc_cgs * self.kpc_cgs
         self.Mpc3_cgs = self.Mpc_cgs * self.Mpc_cgs * self.Mpc_cgs
 
-        # density cosmo units
-        self.densityunit_cosmo2cgs = self.cosmoh * self.cosmoh * self.Msun_cgs / self.kpc3_cgs
+        # NOTE: dx is saved in [kiloparsecs] ! convert to [h^-1 kpc]
+        self.dx_h = ChollaGrid.dx / self.cosmoh
+
+        # save cool attrs
+        self.nx = ChollaGrid.nx_global
+        self.ny = ChollaGrid.ny_global
+        self.nz = ChollaGrid.nz_global
+
+        # present-day energy density for matter, radiation, curvature, and Dark Energy
+        self.OmegaM = OmegaM
+        self.OmegaR = OmegaR
+        self.OmegaK = OmegaK
+        self.OmegaL = OmegaL
+
+        # Dark Energy equation of state like w(a) = w0 + wa(1-a)
+        self.w0, self.wa = w0, wa
+
+        # present-day hubble parameter
+        self.H0 = H0 # in [km s-1 Mpc-1]
+        self.H0_cgs = self.H0 * self.km_cgs / self.Mpc_cgs # in cgs [s-1]
+        self.H0_cosmo = self.H0 / 1.e3 # in cosmological units [km s-1 kpc-1]
+
+        # dimensionless hubble parameter
+        self.h_cosmo = self.H0 / 100.
 
         # Hubble time (1/H0)
-        H0_cgs = self.H0 * self.km_cgs / self.Mpc_cgs
-        t_H0_cgs = 1. / H0_cgs # in seconds
-        self.t_H0 = t_H0_cgs / self.Myr_cgs # Hubble time in Gyrs
+        self.t_H0_cgs = 1. / H0_cgs # in seconds
+        self.t_H0_gyrs = self.t_H0_cgs / self.Gyr_cgs # in Gyrs
+        self.t_H0_cosmo  = self.t_H0_cgs * self.km_cgs / self.kpc_cgs # in cosmological units [s kpc km-1]
 
         # critical density in units of [g cm-3]
         self.rho_crit0_cgs = 3. * H0_cgs * H0_cgs / (8. * np.pi * self.G_cgs)
         
-        # critical density in units of [h2 Msun Mpc-3]
-        self.rho_crit0_cosmo = self.rho_crit0_cgs * (self.Mpc3_cgs) / (self.Msun_cgs) / self.cosmoh / self.cosmoh
+        # critical density in units of [h2 Msun kpc-3]
+        self.rho_crit0_cosmo = self.rho_crit0_cgs * (self.kpc3_cgs) / (self.Msun_cgs) / self.cosmoh / self.cosmoh
+
+
+        # Normalization factors from Initialize Cosmology
+        self.r0_DM = ChollaGrid.dx
+        self.t0_DM = self.t_H0_cosmo
+        self.v0_DM = self.r0_DM / self.t0_DM / self.h_cosmo
+        self.rho0_DM = self.rho_crit0_cosmo * self.OmegaM
+
+        self.r0_gas = 1.0 # simulation ran with gas in [h-1 kpc] (???????)
+        self.t0_gas = self.t_H0_cosmo / self.h_cosmo
+        self.v0_gas = self.r0_gas / self.t0_gas
+        self.rho0_gas = self.rho_crit0_cosmo * self.OmegaM
+        self.phi0_gas = self.v0_gas * self.v0_gas  # energy units
+        self.e0_gas = self.v0_gas * self.v0_gas
+        self.p0_gas = self.rho0_gas * self.v0_gas * self.v0_gas # pressure units
+
+
+        # conversion factors between cosmo [kpc/km Msun kyr] and cgs [cm gram sec] units
+        self.density_cgs2code = self.rho_crit0_cosmo # [h2 Msun kpc-3]
+        self.density_code2cgs = 1. / self.density_cgs2code
+
+        self.mom_cgs2code = self.km_cgs # [km s-1]
+        self.mom_code2cgs = 1. / self.mom_cgs2code
+
+        self.energy_cgs2code = self.km_cgs * self.km_cgs # [km2 s-2]
+        self.energy_code2cgs = 1. / self.mom_cgs2code
+
+
 
 
     def get_lengthunit(self, a):
