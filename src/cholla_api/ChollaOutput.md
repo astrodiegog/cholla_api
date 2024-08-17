@@ -100,31 +100,31 @@ The code units used that are attached to the attributes:
 
 - **density_unit** : present-day critical matter energy density in cosmological units ($h^2 M_{\odot} \rm{kpc}^-3$) --> 
 
-$$$
+$$
 \rho_{0, \rm{gas}} = \frac{3H_0^2}{8 \pi G}
-$$$
+$$
 
 Let's assume that we have the value of $H_0$ in kilometers per second per Megaparsec and $G$, the gravitational constant, in centimeters-cubed per gram per second-squared, in which case we have
 
-$$$
+$$
 \rho_{0, \rm{gas}} = \frac{3(H_0 \rm{km} / \rm{s} / \rm{Mpc})^2}{8 \pi G \rm{cm}^{3} / \rm{g} / \rm{s}^2} = \frac{3H_0^2}{8 \pi G} \frac{\rm{km}^2 \rm{s}^{-2} \rm{Mpc}^{-2} }{\rm{cm}^{3} \rm{g}^{-1} \rm{s}^{-2} }
-$$$
+$$
 
-$$$
+$$
 \rho_{0, \rm{gas}} = \frac{3H_0}{8 \pi G} \frac{\rm{km}^2  \rm{Mpc}^{-2} }{\rm{cm}^{3} \rm{g}^{-1} } = \frac{3H_0}{8 \pi G} \frac{\rm{g}}{\rm{cm}^{3}} \left( \frac{\rm{km}}{\rm{Mpc}} \right)^2
-$$$
+$$
 
 But those aren't the units the Cholla code uses, we need to transform this to $h^2 M_{\odot} \rm{kpc}^-3$
 
-$$$
+$$
 \rho_{0, \rm{gas}} = \frac{3H_0}{8 \pi G} \left( \frac{\rm{km}}{\rm{Mpc}} \right)^2  \frac{\rm{g}}{\rm{cm}^{3}} \frac{M_{\odot}}{1.99 \times 10^{33} \rm{g}} \left( \frac{3.09 \times 10^{21} \rm{cm}}{\rm{kpc}} \right)^3
-$$$
+$$
 
 Further simplifying...
 
-$$$
-\rho_{0, \rm{gas}} = \frac{3H_0}{8 \pi G} \left( \frac{\rm{1.00 \times 10^{5} \rm{cm} }{ 3.09 \times 10^{24} \rm{cm} } \right)^2 \frac{\rm{g}}{{1.99 \times 10^{33} \rm{g}} \left( \frac{3.09 \times 10^{21} \rm{cm}}{\rm{cm}} \right)^3 M_{\odot} \rm{kpc}^-3
-$$$
+$$
+\rho_{0, \rm{gas}} = \frac{3H_0}{8 \pi G} \left( \frac{1.00 \times 10^{5} \rm{cm} }{ 3.09 \times 10^{24} \rm{cm} } \right)^2 \frac{\rm{g}}{{1.99 \times 10^{33} \rm{g}} \left( \frac{3.09 \times 10^{21} \rm{cm}}{\rm{cm}} \right)^3 M_{\odot} \rm{kpc}^-3
+$$
 
 
 
