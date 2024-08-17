@@ -88,16 +88,50 @@ If the Dual Energy flag was used in compiling the Cholla executable, the thermal
 
 When running with a Cholla executable compiled with the ``COSMOLOGY`` macro flag, these are some important notes regarding the attributes.
 
-**Most importantly**, the **velocity_unit** is currently incorrect. Currently, the conversion factor outputted is ``9.77813911e+10``, which is the conversion from the velocity unit kiloparsecs per kiloyears to centimeters per second. However, there is a conversion in the cosmology side of the code, such that the **velocity_unit** should be ``1.0e5`` which is the conversion from the velocity unit kilometers per second to centimeters per second.
-
-The simulation is ran in comoving coordinates. To get [proper distances](https://en.wikipedia.org/wiki/Comoving_and_proper_distances), need to multiply the comoving distance by the scale factor.
-
-The code units used are:
+The code units used that are attached to the attributes:
 
 - **density_unit** : Solar masses per cubic kiloparsec in grams per cubic centimeter --> $M_{\odot} \rm{kpc}^{-3} = 6.76 \times 10^{-32} \rm{g} \rm{cm}^{-3}$
 - **length_unit** : Kiloparsecs in centimeters --> $\rm{kpc} = 3.09 \times 10^{21} \rm{cm}$
+- **velocity_unit** : Kiloparsecs per kiloyers --> $\rm{kpc} / \rm{kyr} = 9.78 \times 10^{10} \rm{cm} / \rm{s}$
 - **time_unit** : Kiloyears in seconds --> $\rm{kyr} = 3.16 \times 10^{10} \rm{s}$
 - **mass_unit** : Solar masses in grams --> $M_{\odot} = 1.99 \times 10^{33} \rm{g}$
+
+**HOWEVER**: this is not what the actual units of the values that are saved. The _actual_ values used are
+
+- **density_unit** : present-day critical matter energy density in cosmological units ($h^2 M_{\odot} \rm{kpc}^-3$) --> 
+
+$$$
+\rho_{0, \rm{gas}} = \frac{3H_0^2}{8 \pi G}
+$$$
+
+Let's assume that we have the value of $H_0$ in kilometers per second per Megaparsec and $G$, the gravitational constant, in centimeters-cubed per gram per second-squared, in which case we have
+
+$$$
+\rho_{0, \rm{gas}} = \frac{3(H_0 \rm{km} / \rm{s} / \rm{Mpc})^2}{8 \pi G \rm{cm}^{3} / \rm{g} / \rm{s}^2} = \frac{3H_0^2}{8 \pi G} \frac{\rm{km}^2 \rm{s}^{-2} \rm{Mpc}^{-2} }{\rm{cm}^{3} \rm{g}^{-1} \rm{s}^{-2} }
+$$$
+
+$$$
+\rho_{0, \rm{gas}} = \frac{3H_0}{8 \pi G} \frac{\rm{km}^2  \rm{Mpc}^{-2} }{\rm{cm}^{3} \rm{g}^{-1} } = \frac{3H_0}{8 \pi G} \frac{\rm{g}}{\rm{cm}^{3}} \left( \frac{\rm{km}}{\rm{Mpc}} \right)^2
+$$$
+
+But those aren't the units the Cholla code uses, we need to transform this to $h^2 M_{\odot} \rm{kpc}^-3$
+
+$$$
+\rho_{0, \rm{gas}} = \frac{3H_0}{8 \pi G} \left( \frac{\rm{km}}{\rm{Mpc}} \right)^2  \frac{\rm{g}}{\rm{cm}^{3}} \frac{M_{\odot}}{1.99 \times 10^{33} \rm{g}} \left( \frac{3.09 \times 10^{21} \rm{cm}}{\rm{kpc}} \right)^3
+$$$
+
+Further simplifying...
+
+$$$
+\rho_{0, \rm{gas}} = \frac{3H_0}{8 \pi G} \left( \frac{\rm{1.00 \times 10^{5} \rm{cm} }{ 3.09 \times 10^{24} \rm{cm} } \right)^2 \frac{\rm{g}}{{1.99 \times 10^{33} \rm{g}} \left( \frac{3.09 \times 10^{21} \rm{cm}}{\rm{cm}} \right)^3 M_{\odot} \rm{kpc}^-3
+$$$
+
+
+
+
+The simulation is ran in comoving coordinates. To get [proper distances](https://en.wikipedia.org/wiki/Comoving_and_proper_distances), need to multiply the comoving distance by the scale factor.
+
+**Most importantly**, the **velocity_unit** is currently incorrect. Currently, the conversion factor outputted is ``9.77813911e+10``, which is the conversion from the velocity unit kiloparsecs per kiloyears to centimeters per second. However, there is a conversion in the cosmology side of the code, such that the **velocity_unit** should be ``1.0e5`` which is the conversion from the velocity unit kilometers per second to centimeters per second.
 
 The following attributes are also included
 
@@ -140,7 +174,7 @@ The implementation of the Cloud-in-Cell scheme is further specified in ``src/par
 
 ## Analysis
 
-This section will describe the files that contain the Ly-$\alpha$ analysis outputs.
+This section will describe the files that contain the Lyman $\alpha$ analysis outputs.
 
 
 ### Skewer Files
