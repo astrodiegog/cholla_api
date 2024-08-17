@@ -269,7 +269,7 @@ class ChollaHydroCalculator:
         return arr
 
 
-    def gas_temp(self, gas_energy, density, gamma, mu, velocity_unit):
+    def gas_temp(self, gas_energy, density, gamma, mu, energy_unit):
         '''
         Calculate the gas temperature in Kelvin
             We use the ideal gas equation kBT = (gamma - 1) * epsilon * mp * mu
@@ -287,7 +287,7 @@ class ChollaHydroCalculator:
             density (arr): hydrodynamic mass density
             gamma (float): ratio of specific heats
             mu (float): mean molecular weight in amu
-            velocity_unit (float): unit conversion from velocity code units to cgs
+            energy_unit (float): unit conversion from energy code units to cgs
         Returns:
             arr (arr): array that will hold data
         '''
@@ -295,12 +295,12 @@ class ChollaHydroCalculator:
         assert np.array_equal(density.shape, self.dims)
         assert gamma > 1.0
         assert mu > 0.0
-        assert velocity_unit > 0.0
+        assert energy_unit > 0.0
         
         # initialize array with dims shape
         arr = self.create_arr()
         
-        coeff = (velocity_unit**2) * (gamma - 1.0) * self.mp * mu / self.kB
+        coeff = (energy_unit) * (gamma - 1.0) * self.mp * mu / self.kB
         arr[:] += gas_energy
         arr[:] *= coeff
         arr[:] /= density

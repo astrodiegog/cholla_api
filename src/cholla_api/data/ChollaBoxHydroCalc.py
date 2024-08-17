@@ -115,14 +115,14 @@ class ChollaBoxHydroCalc:
                                                   self.Box.get_hydrodata(momz_str,
                                                                          self.Calculator.dtype))
 
-    def get_gastemp(self, gamma, mu, velocity_unit):
+    def get_gastemp(self, gamma, mu, energy_unit):
         '''
         Calculate and return the gas temperature for cells in Box
 
         Args:
             gamma (float): ratio of specific heats
             mu (float): mean molecular weight in amu
-            velocity_unit (float): unit conversion from velocity code units to cgs
+            energy_unit (float): unit conversion from energy code units to cgs
         Returns:
             (arr): gas temperature
         '''
@@ -134,7 +134,7 @@ class ChollaBoxHydroCalc:
                                                                self.Calculator.dtype),
                                         self.Box.get_hydrodata(density_str,
                                                                self.Calculator.dtype),
-                                        gamma, mu, velocity_unit)
+                                        gamma, mu, energy_unit)
 
     def get_overdensity(self):
         '''
@@ -202,20 +202,20 @@ class ChollaBoxHydroCalc:
                                                                           self.Calculator.dtype),
                                                    2)
     
-    def get_phasespace(self, gamma, mu, velocity_unit):
+    def get_phasespace(self, gamma, mu, energy_unit):
         '''
         Calculate and return phase space for Box
 
         Args:
             gamma (float): ratio of specific heats
             mu (float): mean molecular weight in amu
-            velocity_unit (float): unit conversion from velocity code units to cgs
+            energy_unit (float): unit conversion from energy code units to cgs
         Returns:
             (tuple): phase space, overdensity bin edges, temp bin edges
         '''
 
         return self.Calculator.create_phase(np.log10(self.get_gastemp(gamma, mu, 
-                                                                      velocity_unit)).ravel() ,
+                                                                      energy_unit)).ravel() ,
                                             np.log10(self.get_overdensity()).ravel() )
 
 

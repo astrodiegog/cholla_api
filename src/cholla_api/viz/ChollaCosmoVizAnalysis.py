@@ -278,7 +278,7 @@ class ChollaCosmoVizAnalysis:
             plt.show()
 
 
-    def plot_temp(self, gamma, mu, velocity_units, save_plot=False, img_ext='png'):
+    def plot_temp(self, gamma, mu, energy_units, save_plot=False, img_ext='png'):
         '''
         Plot the temperature diagnostic for this snapshot. Assumes constant mean
             molecular weight and ratio of specific heats in all cells.
@@ -301,14 +301,14 @@ class ChollaCosmoVizAnalysis:
         Args:
             gamma (float): ratio of specific heats
             mu (float): mean molecular weight in amu
-            velocity_unit (float): unit conversion from velocity code units to cgs
+            energy_unit (float): unit conversion from energy code units to cgs
             save_plot (bool): (optional) whether to save plot
             img_ext (str): (optional) image file extension
         Returns:
             ...
         '''
 
-        code2cgs = velocity_units
+        code2cgs = energy_units
 
         print("Starting density plot calcs")
 

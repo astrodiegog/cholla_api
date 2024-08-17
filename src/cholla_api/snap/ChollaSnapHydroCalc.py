@@ -167,14 +167,14 @@ class ChollaSnapHydroCalc:
                                                      self.Snap.get_hydrodata(self.Grid, momz_str,
                                                                               self.Calculator.dtype))
 
-    def get_gastemp(self, gamma, mu, velocity_unit):
+    def get_gastemp(self, gamma, mu, energy_unit):
         '''
         Calculate and return the gas temperature
 
         Args:
             gamma (float): ratio of specific heats
             mu (float): mean molecular weight in amu
-            velocity_unit (float): unit conversion from velocity code units to cgs
+            energy_unit (float): unit conversion from energy code units to cgs
         Returns:
             (arr): gas temperature
         '''
@@ -185,7 +185,7 @@ class ChollaSnapHydroCalc:
             for boxhead in self.Grid.get_BoxHeads():
                 box = ChollaBox(self.Snap.SnapPath, boxhead)
                 boxhydrocalc = ChollaBoxHydroCalc(box, self.Calculator.dtype)
-                gastemp_box = boxhydrocalc.get_gastemp(gamma, mu, velocity_unit)
+                gastemp_box = boxhydrocalc.get_gastemp(gamma, mu, energy_unit)
                 box.place_data(gastemp_box, gastemp_snap)
 
             return gastemp_snap
@@ -197,7 +197,7 @@ class ChollaSnapHydroCalc:
                                                                    self.Calculator.dtype),
                                            self.Snap.get_hydrodata(self.Grid, density_str,
                                                                    self.Calculator.dtype),
-                                           gamma, mu, velocity_unit)
+                                           gamma, mu, energy_unit)
         
     def get_overdensity(self):
         '''
@@ -326,14 +326,14 @@ class ChollaSnapHydroCalc:
 
 
 
-    def get_phasespace(self, gamma, mu, velocity_unit):
+    def get_phasespace(self, gamma, mu, energy_unit):
         '''
         Calculate and return the phase space
 
         Args:
             gamma (float): ratio of specific heats
             mu (float): mean molecular weight in amu
-            velocity_unit (float): unit conversion from velocity code units to cgs
+            energy_unit (float): unit conversion from energy code units to cgs
         Returns:
             (tuple): phase space, overdensity bin edges, temp bin edges
         '''
@@ -344,13 +344,13 @@ class ChollaSnapHydroCalc:
             for boxhead in self.Grid.get_BoxHeads():
                 box = ChollaBox(self.Snap.SnapPath, boxhead)
                 boxhydrocalc = ChollaBoxHydroCalc(box, self.Calculator.dtype)
-                phasespace_box, xbin, ybin  = boxhydrocalc.get_phasespace(gamma, mu, velocity_unit)
+                phasespace_box, xbin, ybin  = boxhydrocalc.get_phasespace(gamma, mu, energy_unit)
                 phasespace_snap += phasespace_box
 
             return (phasespace_snap, xbin, ybin)
         else:
             return self.Calculator.create_phase(np.log10(self.get_gastemp(gamma, mu, 
-                                                                          velocity_unit)).ravel(),
+                                                                          energy_unit)).ravel(),
                                                 np.log10(self.get_overdensity()).ravel())
 
 

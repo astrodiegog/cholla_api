@@ -145,6 +145,7 @@ class ChollaGlobal:
             if all_units:
                 # Brant Robertson shared the velocity unit conversion
                 self.velocity_unit = 1.0e5 # km to cm
+                self.energy_unit = self.velocity_unit * self.velocity_unit
         
         fObj.close()
 

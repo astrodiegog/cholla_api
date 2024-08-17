@@ -95,14 +95,14 @@ class ChollaCosmoGridCalculator:
 
 
         # conversion factors between cosmo [kpc/km Msun kyr] and cgs [cm gram sec] units
-        self.density_cgs2code = self.rho_crit0_cosmo # [h2 Msun kpc-3]
-        self.density_code2cgs = 1. / self.density_cgs2code
+        self.density_cgs2cosmo = self.rho_crit0_cosmo # [h2 Msun kpc-3]
+        self.density_cosmo2cgs = 1. / self.density_cgs2cosmo
 
-        self.mom_cgs2code = self.km_cgs # [km s-1]
-        self.mom_code2cgs = 1. / self.mom_cgs2code
+        self.mom_cgs2cosmo = self.km_cgs # [km s-1]
+        self.mom_cosmo2cgs = 1. / self.mom_cgs2cosmo
 
-        self.energy_cgs2code = self.km_cgs * self.km_cgs # [km2 s-2]
-        self.energy_code2cgs = 1. / self.mom_cgs2code
+        self.energy_cgs2cosmo = self.km_cgs * self.km_cgs # [km2 s-2]
+        self.energy_cosmo2cgs = 1. / self.mom_cgs2cosmo
 
 
 
