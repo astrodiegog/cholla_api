@@ -132,15 +132,40 @@ $$
 \rho_{0, \rm{gas}} = \left(\frac{1}{h^2}\right) \frac{3H_0}{8 \pi G} \left( \frac{1.00 \times 10^{5} }{ 3.09 \times 10^{24} } \right)^2 \left(1.99 \times 10^{33}\right)^{-1} \left( 3.09 \times 10^{21} \right)^3 h^2 M_{\odot} \rm{kpc}^{-3}
 $$
 
+In pseudocode...
 
 
+```bash
+density = # load density array from cosmology hydro snapshot
+H0, G = # assume these are given in km/s/Mpc and cm3/g/s2
+h = H0 / 100
+# define helpful units
+km_cgs = 1.e5 # km in cm
+Mpc_cgs = 3.0857e24 # Mpc in cm
+Msun_cgs = 1.99e33 # Msolar in g
+kpc_cgs = Mpc_cgs / 1.e3 # kpc in cm
+H0_cgs = H0 * km_cgs / Mpc_cgs # H0 in s-1
+rhocrit0_cgs = 3 * H0_cgs * H0_cgs / 8 / pi / G
+rhocrit0_almostcosmo = rhocrit0_cgs * kpc_cgs * kpc_cgs * kpc_cgs / Msun # rho crit in [Msun kpc-3]
+rhocrit0_cosmo = rhocrit0_almostcosmo / h / h # rho crit in [h2 Msun kpc-3]
+```
 
+There are 6 times where ``rho_0_gas`` (defined in ``Cosmology::Initialize`` of ``src/cosmology/cosmology.cpp``) is called...
 
+1. ``Grid3D::Populate_Lya_Skewers_Local`` in ``src/analysis/lya_statistics.cpp`` when loading data onto skewers, converting from code units to cgs units
+2. ``Grid3D::Copy_Hydro_Density_to_Gravity_Function`` in ``src/gravity/gravity_functions.cpp`` when applying the gas data to solve forgravity, converting from code units to cgs units.
+3. ``__global__ Copy_Hydro_Density_to_Gravity_Kernel`` in ``gravity/gravity_functions_gpu.cu`` when doing the same as the last point, but when gravity is solved on GPUs
+4. ``Grid3D::Change_GAS_Frame_System`` in ``src/cosmology/cosmology_functions.cpp`` when converting between different coordinate systems
+5. ``Cool_GK::Initialize`` in ``src/cooling_grackle/cool_grackle.cpp`` when setting units for the chemistry and radiative cooling library [Grackle](https://grackle.readthedocs.io/en/latest/) 
+6. ``Grid3D::Initialize_Chemistry`` in  ``src/chemistry_gpu/chemistry_functions.cpp`` when setting units for the chemistry solver on the GPU
 
+Each of these instances of using ``rho_0_gas`` show the variable to convert from code units to cgs units.
 
-The simulation is ran in comoving coordinates. To get [proper distances](https://en.wikipedia.org/wiki/Comoving_and_proper_distances), need to multiply the comoving distance by the scale factor.
+-- **velocity_unit** : the velocity units within the code is kilometers per second to centimeters per second --> $\rm{km} / \rm{s} = 10^5 \rm{cm} / \rm{s}$
+-- **energy_unit** : the energy unit goes as the velocity unit squared --? $\rm{km}^2 / \rm{s}^2 = 10^10 \rm{cm}^2 / \rm{s}^2$
 
-**Most importantly**, the **velocity_unit** is currently incorrect. Currently, the conversion factor outputted is ``9.77813911e+10``, which is the conversion from the velocity unit kiloparsecs per kiloyears to centimeters per second. However, there is a conversion in the cosmology side of the code, such that the **velocity_unit** should be ``1.0e5`` which is the conversion from the velocity unit kilometers per second to centimeters per second.
+The simulation is ran in comoving coordinates. To get [proper distances](https://en.wikipedia.org/wiki/Comoving_and_proper_distances), need to multiply the comoving distance by the scale factor. Likewise, to get proper densities, need to divide the physical density by the scale factor cubed
+
 
 The following attributes are also included
 
