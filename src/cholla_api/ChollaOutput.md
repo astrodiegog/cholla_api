@@ -123,8 +123,17 @@ $$
 Further simplifying...
 
 $$
-\rho_{0, \rm{gas}} = \frac{3H_0}{8 \pi G} \left( \frac{1.00 \times 10^{5} \rm{cm} }{ 3.09 \times 10^{24} \rm{cm} } \right)^2 \frac{\rm{g}}{1.99 \times 10^{33} \rm{g}} \left( \frac{3.09 \times 10^{21} \rm{cm}}{\rm{cm}} \right)^3 M_{\odot} \rm{kpc}^-3
+\rho_{0, \rm{gas}} = \frac{3H_0}{8 \pi G} \left( \frac{1.00 \times 10^{5} \rm{cm} }{ 3.09 \times 10^{24} \rm{cm} } \right)^2 \left(\frac{\rm{g}}{1.99 \times 10^{33} \rm{g}}\right) \left( \frac{3.09 \times 10^{21} \rm{cm}}{\rm{cm}} \right)^3 M_{\odot} \rm{kpc}^{-3}
 $$
+
+Once we have evaluated the dimensionless variables $h$, we finally arrive at...
+
+$$
+\rho_{0, \rm{gas}} = \left(\frac{1}{h^2}\right) \frac{3H_0}{8 \pi G} \left( \frac{1.00 \times 10^{5} }{ 3.09 \times 10^{24} } \right)^2 \left(1.99 \times 10^{33}\right)^{-1} \left( 3.09 \times 10^{21} \right)^3 h^2 M_{\odot} \rm{kpc}^{-3}
+$$
+
+
+
 
 
 
