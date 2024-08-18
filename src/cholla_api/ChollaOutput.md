@@ -106,12 +106,18 @@ To convert from the saved momentum to cgs, the following units should be used
 
 such that the velocity units is
 
-- **velocity_unit** : kilometers per second in centimeters per second --> $\rm{km} \rm{s}^{-1} = 1.00 \times 10^5 \rm{cm} \rm{s}$
+- **velocity_unit** : Kilometers per second in centimeters per second --> $\rm{km} \rm{s}^{-1} = 1.00 \times 10^5 \rm{cm} \rm{s}$
 
-To convert the saved energy to cgs, we scale the **momentum_unit** by another factor of velocity
+To convert the saved energy to cgs, we scale the momentum unit by another factor of velocity
 
 - **energy_unit** : Product of kilometers per second and kilometers per second and solar mass per cubic kiloparsecs in centiemeters grams per second, scaled by $h^2$ --> $h^2 \rm{km} \rm{s}^{-1} \rm{km} \rm{s}^{-1} M_{\odot} \rm{kpc}^{-3} = 6.76 \times 10^{-22} h^2 \rm{cm} \rm{g} \rm{s}^{-1}$
 
+Likewise, the unit of length and mass should be scaled by $h$
+
+- **length_unit** : Kiloparsecs in centimeters, scaled by $h$ --> $h^{-1}\rm{kpc} = h^{-1} 3.09 \times 10^{21} \rm{cm}$
+- **mass_unit** : Solar masses in grams, scaled by $h$ --> $h^{-1} M_{\odot} = h^{-1} 6.76 \times 10^{-32} \rm{g}$
+
+Such that dividing mass unit by length unit-cubed results back in the density unit of $h^2 M_{\odot} \rm{kpc}^{-3}$
 
 The following attributes are also included
 
@@ -139,11 +145,15 @@ The following datasets are saved
 - **pos_x** : x-position of particles from origin, in code units
 - **pos_y** : y-position of particles from origin, in code units
 - **pos_z** : z-position of particles from origin, in code units
-- **vel_x** : x-velocity of particles, in code units
-- **vel_y** : y-velocity of particles, in code units
-- **vel_z** : z-velocity of particles, in code units
+- **vel_x** : x-peculiar velocity of particles, in code units
+- **vel_y** : y-peculiar velocity of particles, in code units
+- **vel_z** : z-peculiar velocity of particles, in code units
 
 The implementation of the Cloud-in-Cell scheme is further specified in ``src/particles/density_CIC.cpp`` To gain an understanding of how the Cloud-in-Cell scheme is computed (going from particle position to discrete density cells), I (Diego G.) have found [Birsdall and Fuss 1968](http://www2.imm.dtu.dk/courses/FortranMPI/Projects/N-body/Birdsall:1969.pdf) and Professor Andrey Kravtsov's [Writing a PM code talk](https://astro.uchicago.edu/~andrey/talks/PM/pm.pdf) particularly helpful.
+
+#### Cosmology Notes
+
+The same discussion on units from hydro also applies to the particles such that the density is in units of $h^2 M_{\odot} \rm{kpc}^{-3}$, velocity is in units of $\rm{km} \rm{s}^{-1}$, position is in units of $h^{-1} \rm{kpc}$, and mass is in units of $h^{-1} M_{\odot}$
 
 
 ### Gravity Files
