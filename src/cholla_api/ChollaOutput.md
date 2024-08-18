@@ -202,6 +202,53 @@ The following datasets are saved for each skewer Group
 For the group ``skewer_i``, each dataset will have the shape $((n_j / n_{\rm{nstride}})(n_k / n_{\rm{nstride}}), n_i )$, where $n_i$ is the number of grid cells in $i$-dimension.
 
 
+When trying to reproduce the results from the saved hydro values, we need to take into account that the line of sight velocity calculation is computed as follow...
+
+```bash
+...
+density  = C.density[id_grid] * Cosmo.rho_0_gas;
+velocity = momentum_los[id_grid] * Cosmo.rho_0_gas * Cosmo.v_0_gas / Cosmo.current_a / density;
+...
+```
+
+in lines 1309-1310 of ``src/analysis/lya_statistics.cpp``, where ``Cosmo.rho_0_gas`` and ``Cosmo.v_0_gas`` converts the saved momentum and density from supermoving coordinates to comoving coordinates. Since velocity is divided by the scale factor, it is in proper units. When doing the calculation, the following code starts at line 973
+
+```bash
+...
+dens_factor      = 1. / (Cosmo.current_a * Cosmo.current_a * Cosmo.current_a) * Cosmo.cosmo_h * Cosmo.cosmo_h;
+dens_factor_HI   = dens_factor * Msun / (kpc3) / Mp;
+...
+```
+
+where we also define
+
+```bash
+...
+vel_factor       = 1e5;  // cm/s
+...
+```
+
+in line 976. So that means the calculations on lines 1012 and 1014
+
+```bash
+...
+n_HI_j   = full_density_HI[j] * dens_factor_HI;
+...
+vel_j    = full_vel_Hubble[j] + (full_velocity[j] * vel_factor);
+...
+```
+
+result in ``n_HI_j`` to be in proper density units of grams per centimeters-cubed and ``vel_j`` to be in proper velocity units of centimeters per second.
+
+However, when the data is being saved, we notice that on line 139 of ``src/cosmology/cosmology_functions.cpp``...
+
+```bash
+momentum_factor = Cosmo.rho_0_gas * Cosmo.v_0_gas / Cosmo.current_a;
+```
+
+such that the momentum already takes the scale factor into account. Sooooo, when calculating velocity using the saved momentum and density in the hydro snapshot files, the density needs to be converted from comoving density units to proper density units before calculating the proper velocity. Cheers !
+
+
 ### Analysis Files
 
 Files holding the analysis information will have the name ``nAnalysisOutput_skewers.h5``, where ``nAnalysisOutput`` is the number of the analysis output.
