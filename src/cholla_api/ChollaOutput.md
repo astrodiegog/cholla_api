@@ -96,114 +96,21 @@ The code units used that are attached to the attributes:
 - **time_unit** : Kiloyears in seconds --> $\rm{kyr} = 3.16 \times 10^{10} \rm{s}$
 - **mass_unit** : Solar masses in grams --> $M_{\odot} = 1.99 \times 10^{33} \rm{g}$
 
-**HOWEVER**: this is not what the actual units of the values that are saved. The _actual_ values used are
+**HOWEVER**: this is not what the actual units of the values that are saved. To convert from the density that is saved in snapshots to cgs, the following unit should be used
 
-- **density_unit (internal)** : present-day critical matter energy density in cosmological units ($h^2 M_{\odot} \rm{kpc}^{-3}$) --> 
+- **density_unit** : Solar masses per cubic kiloparsecs in grams per cubic centimter, scaled by $h^2$ --> $h^2 M_{\odot} \rm{kpc}^{-3} = 6.76 \times 10^{-32} h^2 \rm{g} \rm{cm}^{-3}$
 
-$$
-\rho_{0, \rm{gas}} = \frac{3H_0^2}{8 \pi G}
-$$
+To convert from the saved momentum to cgs, the following units should be used
 
-Let's assume that we have the value of $H_0$ in "cosmological units" kilometers per second per Megaparsec ($H_{0, \rm{cosmo}}$) and $G$, the gravitational constant, in centimeters-cubed per gram per second-squared ($G_{\rm{cgs}}$, in which case we have
+- **momentum_unit** : Product of kilometers per second and solar mass per cubic kiloparsecs in grams per centimeter-squared per second, scaled by $h^2$ --> $h^2 \rm{km} \rm{s}^{-1} M_{\odot} \rm{kpc}^{-3} = (1.00 \times 10^{5} \rm{cm} \rm{s}^{-1})(6.76 \times 10^{-32} h^2 \rm{g} \rm{cm}^{-3}) = 6.76 \times 10^{-27} h^2 \rm{g} \rm{cm}^{-2} \rm{s}^{-1}$
 
-$$
-\rho_{0, \rm{gas}} = \frac{3(H_{0,\rm{cosmo}} \rm{km} / \rm{s} / \rm{Mpc})^2}{8 \pi G_{\rm{cgs}} \rm{cm}^{3} / \rm{g} / \rm{s}^2} = \frac{3H_{0, \rm{cosmo}}^2}{8 \pi G_{\rm{cgs}}} \frac{\rm{km}^2 \rm{s}^{-2} \rm{Mpc}^{-2} }{\rm{cm}^{3} \rm{g}^{-1} \rm{s}^{-2} }
-$$
+such that the velocity units is
 
-$$
-\rho_{0, \rm{gas}} = \frac{3H_{0,\rm{cosmo}}^2}{8 \pi G_{\rm{cgs}}} \frac{\rm{km}^2  \rm{Mpc}^{-2} }{\rm{cm}^{3} \rm{g}^{-1} } = \frac{3H_{0,\rm{cosmo}}^2}{8 \pi G_{\rm{cgs}}} \frac{\rm{g}}{\rm{cm}^{3}} \left( \frac{\rm{km}}{\rm{Mpc}} \right)^2
-$$
+- **velocity_unit** : kilometers per second in centimeters per second --> $\rm{km} \rm{s}^{-1} = 1.00 \times 10^5 \rm{cm} \rm{s}$
 
-We want to transform this to be in units of $h^2 M_{\odot} \rm{kpc}^{-3}$, so let's stick in a kiloparsecs-cubed and solar mass...
+To convert the saved energy to cgs, we scale the **momentum_unit** by another factor of velocity
 
-$$
-\rho_{0, \rm{gas}} = \frac{3H_{0, \rm{cosmo}}^2}{8 \pi G_{\rm{cgs}}} \left( \frac{\rm{km}}{\rm{Mpc}} \right)^2  \left(\frac{\rm{g}}{\rm{cm}^{3}}\right) \left(\frac{M_{\odot}}{1.99 \times 10^{33} \rm{g}}\right) \left( \frac{3.09 \times 10^{21} \rm{cm}}{\rm{kpc}} \right)^3
-$$
-
-Further simplifying...
-
-$$
-\rho_{0, \rm{gas}} = \frac{3H_{0, \rm{cosmo}}}{8 \pi G_{\rm{cgs}}} \left( \frac{1.00 \times 10^{5} \rm{cm} }{ 3.09 \times 10^{24} \rm{cm} } \right)^2 \left(\frac{\rm{g}}{1.99 \times 10^{33} \rm{g}}\right) \left( \frac{3.09 \times 10^{21} \rm{cm}}{\rm{cm}} \right)^3 M_{\odot} \rm{kpc}^{-3}
-$$
-
-Once we have evaluated the dimensionless variables $h$, we finally arrive at...
-
-$$
-\rho_{0, \rm{gas}} = \left(\frac{1}{h^2}\right) \frac{3H_{0, \rm{cosmo}}}{8 \pi G_{\rm{cgs}}} \left( \frac{1.00 \times 10^{5} }{ 3.09 \times 10^{24} } \right)^2 \left(1.99 \times 10^{33}\right)^{-1} \left( 3.09 \times 10^{21} \right)^3 h^2 M_{\odot} \rm{kpc}^{-3}
-$$
-
-In pseudocode...
-
-
-```bash
-H0, G_cgs = # assume these are given in km/s/Mpc and cm3/g/s2
-h = H0 / 100
-# define helpful units
-km_cgs = 1.e5 # km in cm
-Mpc_cgs = 3.0857e24 # Mpc in cm
-Msun_cgs = 1.99e33 # Msolar in g
-kpc_cgs = Mpc_cgs / 1.e3 # kpc in cm
-H0_cgs = H0 * km_cgs / Mpc_cgs # H0 in s-1
-rhocrit0_cgs = 3 * H0_cgs * H0_cgs / 8 / pi / G_cgs
-rhocrit0_almostcosmo = rhocrit0_cgs * kpc_cgs * kpc_cgs * kpc_cgs / Msun_cgs # rho crit in [Msun kpc-3]
-rhocrit0_cosmo = rhocrit0_almostcosmo / h / h # rho crit in [h2 Msun kpc-3]
-```
-
-There are 6 times where ``rho_0_gas`` (defined in ``Cosmology::Initialize`` of ``src/cosmology/cosmology.cpp``) is called...
-
-1. ``Grid3D::Populate_Lya_Skewers_Local`` in ``src/analysis/lya_statistics.cpp`` when loading data onto skewers, converting from code units to cgs units
-2. ``Grid3D::Copy_Hydro_Density_to_Gravity_Function`` in ``src/gravity/gravity_functions.cpp`` when applying the gas data to solve for gravity, converting from code units to physical units.
-3. ``__global__ Copy_Hydro_Density_to_Gravity_Kernel`` in ``src/gravity/gravity_functions_gpu.cu`` when doing the same as the last point, but when gravity is solved on GPUs
-4. ``Grid3D::Change_GAS_Frame_System`` in ``src/cosmology/cosmology_functions.cpp`` when converting between different coordinate systems
-5. ``Cool_GK::Initialize`` in ``src/cooling_grackle/cool_grackle.cpp`` when setting units for the chemistry and radiative cooling library [Grackle](https://grackle.readthedocs.io/en/latest/) 
-6. ``Grid3D::Initialize_Chemistry`` in  ``src/chemistry_gpu/chemistry_functions.cpp`` when setting units for the chemistry solver on the GPU
-
-Internally, the density array is saved as a conserved field in units of ``rhocrit0_cosmo``. When the internal conserved density array is multiplied by ``rhocrit0_cosmo``, the resulting array is in units of $h^2 M_{\odot} \rm{kpc}^{-3}$.
-
-This is exactly what happens when data is being saved. Looking inside the function that writes data (``Write_Data`` in ``src/io/io.cpp``), we notice that _before data is written_ (``Output_Data`` outputting the hydro data in line 120 of ``src/io/io.cpp``) we have the following code being called
-
-```bash
-#ifdef COSMOLOGY
-  G.Change_Cosmological_Frame_System(false);
-#endif
-```
-
-from line 113 - 115. Following this function's definition in ``src/cosmology/cosmology_functions.cpp``, calling this function with a false statement will _multiply_ the density array by ``rhocrit0_cosmo`` on line 138 of the same file. When saving the density array, it is saved in units of $h^2 M_{\odot} \rm{kpc}^{-3}$.
-
-Later on in the function that writes data, the density is converted back to the internal cosmological units of ``rhocrit0_cosmo`` on line 169 of ``src/io/io.cpp``. Internally, the process of converting the conserved density value is to
-
-1. multiply by $\rho_{0,\rm{gas}}$ (saved in units of $h^2 M_{\odot} \rm{kpc}^{-3}$)
-2. multiply by the number of grams per solar mass
-3. divide by the number of centimeters per kiloparsec three times
-4. multiply by the dimensionless Hubble constant $h$ two times
-
-This is what happens on line 49 of ``src/chemistry_gpu/chemistry_functions.cpp``, lines 41 and 48 of ``src/cooling_grackle/cool_grackle.cpp``, and lines 1309 and 973 and 974 of ``src/analysis/lya_statistics.cpp``.
-
-The important thing to note is to convert from the density that is saved in snapshots to cgs, the following unit should be used
-
-- **density_unit** : Solar masses per cubic kiloparsecs in grams per cubic centimter, both scaled by $h^2$ --> $h^2 M_{\odot} \rm{kpc}^{-3} = 6.76 \times 10^{-32} h^2 \rm{g} \rm{cm}^{-3}$
-
-Using the same thought process as with density (looking at ``Change_Cosmological_Frame_System`` in ``src/cosmology/cosmology_functions.cpp``), we note 
-
-- **velocity_unit (internal)** : Inverse hubble time (in units of kilometers per second per kiloparsec) scaled by the dimensionless scale factor --> $v_{0,\rm{gas}} = h / H_0 = 0.1$
-
-with the momentum also carrying both velocity and momentum 
-
-- **momentum_unit (internal)** : Product of gas and velocity normalized by the scale factor --> $p_{0,\rm{gas}} = \rho_{0,\rm{gas}} v_{0, \rm{gas}} / a $
-
-and since energy scales as the velocity squared
-
-- **energy_unit (internal)** : Product of gas and velocity-squared normalized by the scale factor-squared --> $E_{0,\rm{gas}} = \rho_{0,\rm{gas}} v_{0,\rm{gas}} v_{0,\rm{gas}} / a / a = \rho_{0,\rm{gas}} (h/H_0)^2 / a^2$
-
-However, the saved values in the snapshots outputted are in units of
-
-- **velocity_unit** : Kilometers per second in centimeters per second --> $\rm{km} \rm{s}^{-1} = 10^5 \rm{cm} \rm{s}^{-1}$
-
-- **momentum_unit** : Product of solar masses per cubic kiloparsecs in grams per cubic centimter and kilometers per second in centimeters per second scaled by $h^2$ --> $h^2 M_{\odot} \rm{kpc}^{-3} \rm{km} \rm{s}^{-1} = 6.76 \times 10^{-32} h^2 \rm{g} \rm{cm}^{-3} \times 10^5 \rm{cm} \rm{s}^{-1} = 6.76 \times 10^{-27} h^2 \rm{g} \rm{cm}^{-2} \rm{s}^{-1}$
-
-- **energy_unit** : Product of solar masses per cubic kiloparsecs in grams per cubic centimter and kilometers per second in centimeters per second and kilometers per second in centimeters per second scaled by $h^2$ --> $h^2 M_{\odot} \rm{kpc}^{-3} \rm{km} \rm{s}^{-1} \rm{km} \rm{s}^{-1} = 6.76 \times 10^{-32} h^2 \rm{g} \rm{cm}^{-3} \times 10^5 \rm{cm} \rm{s}^{-1} \times 10^5 \rm{cm} \rm{s}^{-1} = 6.76 \times 10^{-22} h^2 \rm{g} \rm{cm}^{-1} \rm{s}^{-2}$
-
-The simulation is ran in comoving coordinates. To get [proper distances](https://en.wikipedia.org/wiki/Comoving_and_proper_distances), need to multiply the comoving distance by the scale factor. Likewise, to get proper densities, need to divide the physical density by the scale factor cubed
+- **energy_unit** : Product of kilometers per second and kilometers per second and solar mass per cubic kiloparsecs in centiemeters grams per second, scaled by $h^2$ --> $h^2 \rm{km} \rm{s}^{-1} \rm{km} \rm{s}^{-1} M_{\odot} \rm{kpc}^{-3} = 6.76 \times 10^{-22} h^2 \rm{cm} \rm{g} \rm{s}^{-1}$
 
 
 The following attributes are also included
