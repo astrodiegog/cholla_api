@@ -127,6 +127,8 @@ The following attributes are also included
 - **Omega_L** : present-day energy density parameter for dark energy
 - **Omega_M** : present-day energy density parameter for matter
 
+**LASTLY**, the values are ran in super-comoving units and saved in comoving units with their scale factor scaling still attached. We can turn to equations 15-21 of [Martell and Shapiro 1998](https://academic.oup.com/mnras/article/297/2/467/988380) and equations 22-24 of [Teyssier 2002](https://ui.adsabs.harvard.edu/abs/2002A%26A...385..337T/abstract) to notice that we convert from the saved comoving density $\rho_{\rm{comov}}$ and the proper density $\rho_{\rm{proper}}$ with $\rho_{\rm{comov}} = a^3 \rho_{\rm{proper}}$. Likewise, we convert between the saved comoving distance $x_{\rm{comov}}$ (such as the dimensions of the box) and the proper distance $x_{\rm{proper}}$ with $x_{\rm{comov}} = a^{-1}x_{\rm{proper}}$. We also convert between the saved comoving/peculiar velocity $v_{\rm{comov}}$ and the proper velocity $v_{\rm{proper}}$ using $v_{\rm{comov}} = a v_{\rm{proper}}$.
+
 
 ### Particle Files
 
@@ -182,7 +184,7 @@ The root Skewer File Object has the following attributes:
 - **w0** & **wa** : values that specify a time-evolving dark energy equation of state linearly with scale factor, of the form $w(a) = w_0 + w_a (1 - a)$
 - **current_a** : scale factor at the time of the skewer output
 - **current_z** : redshift at the time of the skewer output
-- **Lbox** : global domain length in all three dimensions in units of [kpc]
+- **Lbox** : global domain length in all three dimensions in units of [kpc / h]
 
 Skewer files have three Groups: ``skewers_x``, ``skewers_y``, and ``skewers_z``.
 
