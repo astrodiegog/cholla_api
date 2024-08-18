@@ -243,10 +243,12 @@ result in ``n_HI_j`` to be in proper density units of grams per centimeters-cube
 However, when the data is being saved, we notice that on line 139 of ``src/cosmology/cosmology_functions.cpp``...
 
 ```bash
+dens_factor     = Cosmo.rho_0_gas;
 momentum_factor = Cosmo.rho_0_gas * Cosmo.v_0_gas / Cosmo.current_a;
+energy_factor   = Cosmo.rho_0_gas * Cosmo.v_0_gas * Cosmo.v_0_gas / Cosmo.current_a / Cosmo.current_a;
 ```
 
-such that the momentum already takes the scale factor into account. Sooooo, when calculating velocity using the saved momentum and density in the hydro snapshot files, the density needs to be converted from comoving density units to proper density units before calculating the proper velocity. Cheers !
+such that the momentum and energy already takes the scale factor into account, but density does not. In effect, density is saved in comoving units, while momentum and energy are saved in proper units. Sooooo, when calculating velocity using the saved momentum and density in the hydro snapshot files, the density needs to be converted from comoving density units to proper density units before calculating the proper velocity. Cheers !
 
 
 ### Analysis Files
