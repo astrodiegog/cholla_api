@@ -199,6 +199,8 @@ The following datasets are saved for each skewer Group
 - **temperature** : temperature in each cell, in Kelvin
 - **vel_Hubble** : the Hubble flow velocity along line-of-sight of skewers, in proper units [km / s]
 
+The density are saved in comoving units, the line-of-sight velocity is the peculiar velocity, and last velocity is the Hubble flow. 
+
 For the group ``skewer_i``, each dataset will have the shape $((n_j / n_{\rm{nstride}})(n_k / n_{\rm{nstride}}), n_i )$, where $n_i$ is the number of grid cells in $i$-dimension.
 
 
