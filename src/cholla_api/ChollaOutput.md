@@ -100,13 +100,13 @@ The code units used that are attached to the attributes:
 
 - **density_unit** : Solar masses per cubic kiloparsecs in grams per cubic centimter, scaled by $h^2$ --> $h^2 M_{\odot} \rm{kpc}^{-3} = 6.76 \times 10^{-32} h^2 \rm{g} \rm{cm}^{-3}$
 
-To convert from the saved momentum to cgs, the following units should be used
+The velocity units is
+
+- **velocity_unit** : (peculiar velocity) Kilometers per second in centimeters per second --> $\rm{km} \rm{s}^{-1} = 1.00 \times 10^5 \rm{cm} \rm{s}$
+
+To convert from the saved momentum to cgs, the mass density is multiplied by the peculiar velocity
 
 - **momentum_unit** : Product of kilometers per second and solar mass per cubic kiloparsecs in grams per centimeter-squared per second, scaled by $h^2$ --> $h^2 \rm{km} \rm{s}^{-1} M_{\odot} \rm{kpc}^{-3} = (1.00 \times 10^{5} \rm{cm} \rm{s}^{-1})(6.76 \times 10^{-32} h^2 \rm{g} \rm{cm}^{-3}) = 6.76 \times 10^{-27} h^2 \rm{g} \rm{cm}^{-2} \rm{s}^{-1}$
-
-such that the velocity units is
-
-- **velocity_unit** : Kilometers per second in centimeters per second --> $\rm{km} \rm{s}^{-1} = 1.00 \times 10^5 \rm{cm} \rm{s}$
 
 To convert the saved energy to cgs, we scale the momentum unit by another factor of velocity
 
@@ -127,7 +127,7 @@ The following attributes are also included
 - **Omega_L** : present-day energy density parameter for dark energy
 - **Omega_M** : present-day energy density parameter for matter
 
-**LASTLY**, the values are ran in super-comoving units and saved in comoving units with their scale factor scaling still attached. We can turn to equations 15-21 of [Martell and Shapiro 1998](https://academic.oup.com/mnras/article/297/2/467/988380) and equations 22-24 of [Teyssier 2002](https://ui.adsabs.harvard.edu/abs/2002A%26A...385..337T/abstract) to notice that we convert from the saved comoving density $\rho_{\rm{comov}}$ and the proper density $\rho_{\rm{proper}}$ with $\rho_{\rm{comov}} = a^3 \rho_{\rm{proper}}$. Likewise, we convert between the saved comoving distance $x_{\rm{comov}}$ (such as the dimensions of the box) and the proper distance $x_{\rm{proper}}$ with $x_{\rm{comov}} = a^{-1}x_{\rm{proper}}$. We also convert between the saved comoving/peculiar velocity $v_{\rm{comov}}$ and the proper velocity $v_{\rm{proper}}$ using $v_{\rm{comov}} = a v_{\rm{proper}}$.
+**LASTLY**, the values are ran in super-comoving units and saved in comoving units with their scale factor scaling still attached. We can turn to equations 15-21 of [Martell and Shapiro 1998](https://academic.oup.com/mnras/article/297/2/467/988380) and equations 22-24 of [Teyssier 2002](https://ui.adsabs.harvard.edu/abs/2002A%26A...385..337T/abstract) to notice that we convert from the saved comoving density $\rho_{\rm{comov}}$ and the proper density $\rho_{\rm{proper}}$ with $\rho_{\rm{comov}} = a^3 \rho_{\rm{proper}}$. Likewise, we convert between the saved comoving distance $x_{\rm{comov}}$ (such as the dimensions of the box) and the proper distance $x_{\rm{proper}}$ with $x_{\rm{comov}} = a^{-1}x_{\rm{proper}}$.
 
 
 ### Particle Files
@@ -200,55 +200,6 @@ The following datasets are saved for each skewer Group
 - **vel_Hubble** : the Hubble flow velocity along line-of-sight of skewers, in proper units [km / s]
 
 For the group ``skewer_i``, each dataset will have the shape $((n_j / n_{\rm{nstride}})(n_k / n_{\rm{nstride}}), n_i )$, where $n_i$ is the number of grid cells in $i$-dimension.
-
-
-When trying to reproduce the results from the saved hydro values, we need to take into account that the line of sight velocity calculation is computed as follow...
-
-```bash
-...
-density  = C.density[id_grid] * Cosmo.rho_0_gas;
-velocity = momentum_los[id_grid] * Cosmo.rho_0_gas * Cosmo.v_0_gas / Cosmo.current_a / density;
-...
-```
-
-in lines 1309-1310 of ``src/analysis/lya_statistics.cpp``, where ``Cosmo.rho_0_gas`` and ``Cosmo.v_0_gas`` converts the saved momentum and density from supermoving coordinates to comoving coordinates. Since velocity is divided by the scale factor, it is in proper units. When doing the calculation, the following code starts at line 973
-
-```bash
-...
-dens_factor      = 1. / (Cosmo.current_a * Cosmo.current_a * Cosmo.current_a) * Cosmo.cosmo_h * Cosmo.cosmo_h;
-dens_factor_HI   = dens_factor * Msun / (kpc3) / Mp;
-...
-```
-
-where we also define
-
-```bash
-...
-vel_factor       = 1e5;  // cm/s
-...
-```
-
-in line 976. So that means the calculations on lines 1012 and 1014
-
-```bash
-...
-n_HI_j   = full_density_HI[j] * dens_factor_HI;
-...
-vel_j    = full_vel_Hubble[j] + (full_velocity[j] * vel_factor);
-...
-```
-
-result in ``n_HI_j`` to be in proper density units of grams per centimeters-cubed and ``vel_j`` to be in proper velocity units of centimeters per second.
-
-However, when the data is being saved, we notice that on line 139 of ``src/cosmology/cosmology_functions.cpp``...
-
-```bash
-dens_factor     = Cosmo.rho_0_gas;
-momentum_factor = Cosmo.rho_0_gas * Cosmo.v_0_gas / Cosmo.current_a;
-energy_factor   = Cosmo.rho_0_gas * Cosmo.v_0_gas * Cosmo.v_0_gas / Cosmo.current_a / Cosmo.current_a;
-```
-
-such that the momentum and energy already takes the scale factor into account, but density does not. In effect, density is saved in comoving units, while momentum and energy are saved in proper units. Sooooo, when calculating velocity using the saved momentum and density in the hydro snapshot files, the density needs to be converted from comoving density units to proper density units before calculating the proper velocity. Cheers !
 
 
 ### Analysis Files
