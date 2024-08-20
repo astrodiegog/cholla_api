@@ -90,7 +90,7 @@ class ChollaCosmoVizAnalysis:
         return self.ImgDir + "/" + f"tempdiagnostic_{self.snap.SnapHead.nSnap:.0f}" + "." + img_ext
 
 
-    def plot_density(self, density_units, save_plot=False, img_ext='png'):
+    def plot_density(self, save_plot=False, img_ext='png'):
         '''
         Plot the density diagnostic for this snapshot.
             Create a 2x2 plot:
@@ -109,23 +109,20 @@ class ChollaCosmoVizAnalysis:
         n_y (x,z) needs to flip order of both axes so x is decreasing downward 
             and z is decreasing leftward
 
+        Assumes density is saved in [h2 Msun / kpc3] comoving density units (!)
+
         Args:
-            density_unit (float): unit conversion from density code units to cgs
             save_plot (bool): (optional) whether to save plot
             img_ext (str): (optional) image file extension
         Returns:
             ...
         '''
 
-        code2cgs = density_units
-        # code2cosmo holds conversion from code units to [h2 Msun / kpc3]
-        code2cosmo_units = code2cgs / self.cosmoCalc.get_densityunit(self.snap.SnapHead.a)
-
         print("Starting density plot calcs")
 
         # in units of [h2 Msun / kpc3]
-        l_histmin, l_histmax = -3.0, 2.0
-        l_cbarmin, l_cbarmax = 0., 5.0
+        l_histmin, l_histmax = -3.0, 3.0
+        l_cbarmin, l_cbarmax = 1.0, 5.0
         # set the top-left histogram bins
         l_nhist_bins = np.linspace(l_histmin, l_histmax, self.nhist_bins)
         
@@ -140,8 +137,8 @@ class ChollaCosmoVizAnalysis:
             box = ChollaBox(self.snap.SnapPath, boxhead)
             boxhydrocalc = ChollaBoxHydroCalc(box, self.precision)
 
-            # grab density, convert to [h2 Msun / kpc3]
-            density = box.get_hydrodata(box.density_str, dtype=self.precision) * code2cosmo_units
+            # grab density
+            density = box.get_hydrodata(box.density_str, dtype=self.precision)
 
             # histogram
             l_nhist_box, _ = np.histogram(np.log10(density.flatten()), bins=l_nhist_bins)
@@ -314,7 +311,7 @@ class ChollaCosmoVizAnalysis:
 
         # in units of [Kelvin]
         l_histmin, l_histmax = 3.0, 7.0
-        l_cbarmin, l_cbarmax = 6.0, 10.0
+        l_cbarmin, l_cbarmax = 7.0, 10.0
         # set the top-left histogram bins
         l_Thist_bins = np.linspace(l_histmin, l_histmax, self.nhist_bins)
 
@@ -470,7 +467,7 @@ class ChollaCosmoVizAnalysis:
             plt.show()
 
     
-    def plot_densityDM(self, density_units, save_plot=False, img_ext='png'):
+    def plot_densityDM(self, save_plot=False, img_ext='png'):
         '''
         Plot the dark matter density diagnostic for this snapshot using the
             Cloud-in-Cell density saved in particle data files
@@ -483,6 +480,8 @@ class ChollaCosmoVizAnalysis:
         Orientation is such that the "inner" axes will be shared among the three
             projection plots. Two bottom plots share x-axis. Two right plots
             share y-axis.
+
+        Assumes density is saved in [h2 Msun / kpc3] comoving density units (!)
 
         imshow() uses first axis as the vertical axis
         n_x (y,z) needs to be transposed so vertical is z and horizontal is y
@@ -498,15 +497,11 @@ class ChollaCosmoVizAnalysis:
             ...
         '''
 
-        code2cgs = density_units
-        # code2cosmo holds conversion from code units to [h2 Msun / kpc3]
-        code2cosmo_units = code2cgs / self.cosmoCalc.get_densityunit(self.snap.SnapHead.a)
-
         print("Starting density plot calcs")
 
         # in units of [h2 Msun / kpc3]
-        l_histmin, l_histmax = -2.5, 2.5
-        l_cbarmin, l_cbarmax = 1.0, 6.0
+        l_histmin, l_histmax = -3.0, 3.0
+        l_cbarmin, l_cbarmax = 2.0, 6.0
         # set the top-left histogram bins
         l_nhist_bins = np.linspace(l_histmin, l_histmax, self.nhist_bins)
 
@@ -521,8 +516,8 @@ class ChollaCosmoVizAnalysis:
             box = ChollaBox(self.snap.SnapPath, boxhead)
             boxhydrocalc = ChollaBoxHydroCalc(box, self.precision)
 
-            # grab density, convert to [h2 Msun / kpc3]
-            density = box.get_particledata(box.densityCIC_str, dtype=self.precision) * code2cosmo_units
+            # grab density
+            density = box.get_particledata(box.densityCIC_str, dtype=self.precision)
 
             # histogram
             l_nhist_box, _ = np.histogram(np.log10(density.flatten()), bins=l_nhist_bins)
