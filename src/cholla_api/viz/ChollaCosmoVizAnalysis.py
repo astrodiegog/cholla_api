@@ -307,7 +307,7 @@ class ChollaCosmoVizAnalysis:
 
         code2cgs = energy_units
 
-        print("Starting density plot calcs")
+        print("Starting temp plot calcs")
 
         # in units of [Kelvin]
         l_histmin, l_histmax = 3.0, 7.0
@@ -497,7 +497,7 @@ class ChollaCosmoVizAnalysis:
             ...
         '''
 
-        print("Starting density plot calcs")
+        print("Starting dark matter density plot calcs")
 
         # in units of [h2 Msun / kpc3]
         l_histmin, l_histmax = -3.0, 3.0
