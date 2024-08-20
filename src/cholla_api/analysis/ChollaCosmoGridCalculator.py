@@ -42,9 +42,6 @@ class ChollaCosmoGridCalculator:
         self.kpc3_cgs = self.kpc_cgs * self.kpc_cgs * self.kpc_cgs
         self.Mpc3_cgs = self.Mpc_cgs * self.Mpc_cgs * self.Mpc_cgs
 
-        # NOTE: dx is saved in [kiloparsecs] ! convert to [h^-1 kpc]
-        self.dx_h = ChollaGrid.dx / self.cosmoh
-
         # save cool attrs
         self.nx = ChollaGrid.nx_global
         self.ny = ChollaGrid.ny_global
@@ -67,16 +64,19 @@ class ChollaCosmoGridCalculator:
         # dimensionless hubble parameter
         self.h_cosmo = self.H0 / 100.
 
+        # NOTE: dx is saved in [kiloparsecs] ! convert to [h-1 kpc]
+        self.dx_h = ChollaGrid.dx / self.h_cosmo
+
         # Hubble time (1/H0)
-        self.t_H0_cgs = 1. / H0_cgs # in seconds
+        self.t_H0_cgs = 1. / self.H0_cgs # in seconds
         self.t_H0_gyrs = self.t_H0_cgs / self.Gyr_cgs # in Gyrs
         self.t_H0_cosmo  = self.t_H0_cgs * self.km_cgs / self.kpc_cgs # in cosmological units [s kpc km-1]
 
         # critical density in units of [g cm-3]
-        self.rho_crit0_cgs = 3. * H0_cgs * H0_cgs / (8. * np.pi * self.G_cgs)
+        self.rho_crit0_cgs = 3. * self.H0_cgs * self.H0_cgs / (8. * np.pi * self.G_cgs)
         
         # critical density in units of [h2 Msun kpc-3]
-        self.rho_crit0_cosmo = self.rho_crit0_cgs * (self.kpc3_cgs) / (self.Msun_cgs) / self.cosmoh / self.cosmoh
+        self.rho_crit0_cosmo = self.rho_crit0_cgs * (self.kpc3_cgs) / (self.Msun_cgs) / self.h_cosmo / self.h_cosmo
 
 
         # Normalization factors from Initialize Cosmology
@@ -95,39 +95,22 @@ class ChollaCosmoGridCalculator:
 
 
         # conversion factors between cosmo [kpc/km Msun kyr] and cgs [cm gram sec] units
+        # these factors DO NOT account for comoving units (ie, scale factor not incorporated)
+        # multiplying array (in cgs units) by array_cgs2cosmo provides array in cosmo units
+        # multiplying array (in cosmo units) by array_cosmo2cgs provides array in cgs units
         self.density_cgs2cosmo = self.rho_crit0_cosmo # [h2 Msun kpc-3]
         self.density_cosmo2cgs = 1. / self.density_cgs2cosmo
 
-        self.mom_cgs2cosmo = self.km_cgs # [km s-1]
+        self.velocity_cgs2cosmo = self.km_cgs # [km s-1]
+        self.velocity_cosmo2cgs = 1. / self.velocity_cgs2cosmo
+
+        self.mom_cgs2cosmo = self.density_cgs2cosmo * self.km_cgs # [h2 Msun kpc-3  km s-1]
         self.mom_cosmo2cgs = 1. / self.mom_cgs2cosmo
 
-        self.energy_cgs2cosmo = self.km_cgs * self.km_cgs # [km2 s-2]
+        self.energy_cgs2cosmo = self.density_cgs2cosmo * self.km_cgs * self.km_cgs # [h2 Msun kpc-3  km2 s-2]
         self.energy_cosmo2cgs = 1. / self.mom_cgs2cosmo
 
 
-
-
-    def get_lengthunit(self, a):
-        '''
-        Return the cosmological length unit [h^-1 / Mpc] in cgs at some scale
-            factor. Length scales as (1/a)
-        '''
-
-        return self.Mpc_cgs / a
-
-    def get_densityunit(self, a):
-        '''
-        Return the cosmological density unit [h2 Msun / kpc3] in cgs at some 
-            scale factor. Density scales as (1/a^3)
-
-        Args:
-            a (float): scale factor
-        Returns:
-            (float): density unit (h^2 * Msun / kpc^3)
-        '''
-        a3 = a * a * a
-
-        return self.densityunit_cosmo2cgs / a3
 
     def get_Hubble(self, a):
         '''
