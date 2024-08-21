@@ -172,7 +172,7 @@ class ChollaOnTheFlyAnalysisViz:
         xlow, xupp = 1e-3, 4e-1
         _ = ax.set_xlim(xlow, xupp)
 
-        ylow, yupp = 1e-6, 1e2
+        ylow, yupp = 1e-6, 1e0
         _ = ax.set_ylim(ylow, yupp)
 
         # set x/y log-scale
@@ -272,7 +272,7 @@ class ChollaOnTheFlyAnalysisViz:
         ylow, yupp = 2, 8
         _ = ax_phase.set_ylim(ylow, yupp)
 
-        ylow, yupp = 1e-6, 1e2
+        ylow, yupp = 1e-6, 1e0
         _ = ax_PS.set_ylim(ylow, yupp)
 
         # set x/y powerspectrum to log-scale
