@@ -72,9 +72,21 @@ class ChollaBox:
         self.momy_str = "momentum_y"
         self.momz_str = "momentum_z"
         self.gasenergy_str = "GasEnergy"
+        
+        # chemical species keys
+        self.HIdensity_str = "HI_density"
+        self.HIIdensity_str = "HII_density"
+        self.HeIdensity_str = "HeI_density"
+        self.HeIIdensity_str = "HeII_density"
+        self.HeIIIdensity_str = "HeIII_density"
+        self.edensity_str = "e_density"
+        self.temp_str = "temperature"
 
         self.hydro_allkeys = {self.energy_str, self.density_str, self.momx_str, 
-                                self.momy_str, self.momz_str, self.gasenergy_str}
+                              self.momy_str, self.momz_str, self.gasenergy_str,
+                              self.HIdensity_str, self.HIIdensity_str,
+                              self.HeIdensity_str, self.HeIIdensity_str, self.HeIIIdensity_str,
+                              self.edensity_str, self.temp_str}
 
 
         # particle keys
