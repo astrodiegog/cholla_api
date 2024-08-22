@@ -149,7 +149,7 @@ class ChollaOnTheFlySkewerViz:
         _ = fig.tight_layout()
 
         if save_plot:
-            assert nSkewerOutput
+            assert nSkewerOutput is not None
             plt.savefig(self.get_combofPath(nSkewerOutput, img_ext), dpi=self.dpi, bbox_inches = "tight")
         else:
             plt.show()
