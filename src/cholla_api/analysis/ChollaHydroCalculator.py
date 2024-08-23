@@ -306,6 +306,38 @@ class ChollaHydroCalculator:
         arr[:] /= density
         
         return arr
+
+    def gas_temp_muarr(self, gas_energy, density, gamma, mu_arr, energy_unit):
+        '''
+        Same as gas_temp ^ but assumes that input mean molecular weight is an
+            array evaluated at each cell        
+
+        Args:
+            gas_energy (arr): the thermal energy density, equivalent to the 
+                total energy density minus the kinetic energy density
+            density (arr): hydrodynamic mass density
+            gamma (float): ratio of specific heats
+            mu (arr): mean molecular weight in amu
+            energy_unit (float): unit conversion from energy code units to cgs
+        Returns:
+            arr (arr): array that will hold data
+        '''
+        assert np.array_equal(gas_energy.shape, self.dims)
+        assert np.array_equal(density.shape, self.dims)
+        assert gamma > 1.0
+        assert np.array_equal(mu_arr, self.dims)
+        assert np.min(mu_arr) > 0.0
+        assert energy_unit > 0.0
+
+        # initialize array with dims shape
+        arr = self.create_arr()
+
+        coeff = (energy_unit) * (gamma - 1.0) * self.mp * mu_arr / self.kB
+        arr[:] += gas_energy
+        arr[:] *= coeff
+        arr[:] /= density
+
+        return arr
     
     
     def overdensity_median(self, density):
