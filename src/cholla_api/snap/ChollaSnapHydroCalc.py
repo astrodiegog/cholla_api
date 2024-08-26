@@ -72,6 +72,45 @@ class ChollaSnapHydroCalc:
                                           self.Snap.get_hydrodata(self.Grid, momz_str, 
                                                                   self.Calculator.dtype))
 
+    def get_intenergy(self):
+        '''
+        Calculate and return the internal energy
+
+        Args:
+            ...
+        Returns:
+            (arr): internal energy
+        '''
+
+        if self.boxcalc:
+            intenergy_snap = self.Calculator.create_arr()
+
+            for boxhead in self.Grid.get_BoxHeads():
+                box = ChollaBox(self.Snap.SnapPath, boxhead)
+                boxhydrocalc = ChollaBoxHydroCalc(box, self.Calculator.dtype)
+                intenergy_box = boxhydrocalc.get_intenergy()
+                box.place_data(intenergy_box, vmag_snap)
+
+            return intenergy_snap
+    
+        else:
+            density_str = self.Box.density_str
+            energy_str = self.Box.energy_str
+            momx_str = self.Box.momx_str
+            momy_str = self.Box.momy_str
+            momz_str = self.Box.momz_str
+
+            return self.Calculator.int_energy(self.Snap.get_hydrodata(self.Grid, energy_str,
+                                                                      self.Calculator.dtype),
+                                              self.Snap.get_hydrodata(self.Grid, density_str,
+                                                                      self.Calculator.dtype),
+                                              self.Snap.get_hydrodata(self.Grid, momx_str,
+                                                                      self.Calculator.dtype),
+                                              self.Snap.get_hydrodata(self.Grid, momy_str,
+                                                                      self.Calculator.dtype),
+                                              self.Snap.get_hydrodata(self.Grid, momz_str,
+                                                                      self.Calculator.dtype))
+
 
     def get_pressure(self, DE_flag, gamma):
         '''
@@ -121,9 +160,9 @@ class ChollaSnapHydroCalc:
                                                     gamma)
 
 
-    def get_intenergy(self, DE_flag):
+    def get_specintenergy(self, DE_flag):
         '''
-        Calculate and return the internal energy
+        Calculate and return the specific internal energy
 
         Args:
             DE_flag (bool): whether to use dual-energy formalism
@@ -132,13 +171,13 @@ class ChollaSnapHydroCalc:
         '''
 
         if self.boxcalc:
-            intenergy_snap = self.Calculator.create_arr()
+            specintenergy_snap = self.Calculator.create_arr()
 
             for boxhead in self.Grid.get_BoxHeads():
                 box = ChollaBox(self.Snap.SnapPath, boxhead)
                 boxhydrocalc = ChollaBoxHydroCalc(box, self.Calculator.dtype)
-                intenergy_box = boxhydrocalc.get_intenergy(DE_flag, gamma)
-                box.place_data(intenergy_box, intenergy_snap)
+                specintenergy_box = boxhydrocalc.get_specintenergy(DE_flag)
+                box.place_data(specintenergy_box, specintenergy_snap)
 
             return pressure_snap
         else:
@@ -146,26 +185,26 @@ class ChollaSnapHydroCalc:
             if DE_flag:
                 gasenergy_str = self.box0.gasenergy_str
 
-                return self.Calculator.intenergy_DE(self.Snap.get_hydrodata(self.Grid, gasenergy_str,
-                                                                            self.Calculator.dtype),
-                                                    self.Snap.get_hydrodata(self.Grid, density_str,
-                                                                            self.Calculator.dtype)) 
+                return self.Calculator.specintenergy_DE(self.Snap.get_hydrodata(self.Grid, gasenergy_str,
+                                                                                self.Calculator.dtype),
+                                                        self.Snap.get_hydrodata(self.Grid, density_str,
+                                                                                self.Calculator.dtype)) 
             else:
                 energy_str = self.box0.energy_str
                 momx_str = self.box0.momx_str
                 momy_str = self.box0.momy_str
                 momz_str = self.box0.momz_str
 
-                return self.Calculator.intenergy_noDE(self.Snap.get_hydrodata(self.Grid, energy_str,
-                                                                              self.Calculator.dtype),
-                                                     self.Snap.get_hydrodata(self.Grid, density_str,
-                                                                              self.Calculator.dtype),
-                                                     self.Snap.get_hydrodata(self.Grid, momx_str,
-                                                                              self.Calculator.dtype),
-                                                     self.Snap.get_hydrodata(self.Grid, momy_str,
-                                                                              self.Calculator.dtype),
-                                                     self.Snap.get_hydrodata(self.Grid, momz_str,
-                                                                              self.Calculator.dtype))
+                return self.Calculator.specintenergy_noDE(self.Snap.get_hydrodata(self.Grid, energy_str,
+                                                                                  self.Calculator.dtype),
+                                                          self.Snap.get_hydrodata(self.Grid, density_str,
+                                                                                  self.Calculator.dtype),
+                                                          self.Snap.get_hydrodata(self.Grid, momx_str,
+                                                                                  self.Calculator.dtype),
+                                                          self.Snap.get_hydrodata(self.Grid, momy_str,
+                                                                                  self.Calculator.dtype),
+                                                          self.Snap.get_hydrodata(self.Grid, momz_str,
+                                                                                  self.Calculator.dtype))
 
     def get_gastemp(self, gamma, mu, energy_unit):
         '''

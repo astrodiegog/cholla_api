@@ -138,7 +138,35 @@ class ChollaHydroCalculator:
         # arr[:] = np.sqrt(mom_x**2 + mom_y**2 + mom_z**2)/(density)
         
         return arr
+
+    def int_energy(self, energy, density, mom_x, mom_y, mom_z):
+        '''
+        Calculate the internal energy. Equivalent to Gas Energy in
+            dual-energy formalism
+
+        Args:
+            energy (arr): the total energy density
+            density (arr): hydrodynamic mass density
+            mom_x (arr): x-momentum density
+            mom_y (arr): y-momentum density
+            mom_z (arr): z-momentum density
+        Returns:
+            arr (arr): array that will hold data
+        '''
+        assert np.array_equal(energy.shape, self.dims)
+        assert np.array_equal(density.shape, self.dims)
+        assert np.array_equal(mom_x.shape, self.dims)
+        assert np.array_equal(mom_y.shape, self.dims)
+        assert np.array_equal(mom_z.shape, self.dims)
     
+        # initialize array with dims shape
+        arr = self.create_arr()
+
+        # could calculate vmag inline instead of calling function
+        arr[:] = (energy - (0.5)*(density)*(self.velmag(density, mom_x, mom_y, mom_z))**2)
+
+        return arr
+
     
     def pressure_DE(self, gas_energy, gamma):
         '''
@@ -191,7 +219,7 @@ class ChollaHydroCalculator:
         return arr
     
     
-    def intenergy_DE(self, gas_energy, density):
+    def specintenergy_DE(self, gas_energy, density):
         '''
         Calculate the specific internal energy data with the dual-energy 
             formalism
@@ -214,7 +242,7 @@ class ChollaHydroCalculator:
         return arr
     
     
-    def intenergy_noDE(self, energy, density, mom_x, mom_y, mom_z):
+    def specintenergy_noDE(self, energy, density, mom_x, mom_y, mom_z):
         '''
         Calculate the specific internal energy data without the dual-energy 
             formalism

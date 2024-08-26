@@ -42,6 +42,33 @@ class ChollaBoxHydroCalc:
                                       self.Box.get_hydrodata(momz_str,
                                                             self.Calculator.dtype))
 
+    def get_intenergy(self):
+        '''
+        Calculate and return the internal energy for cells in Box
+
+        Args:
+            ...
+        Returns:
+            (arr): internal energy
+        '''
+
+        density_str = self.Box.density_str
+        energy_str = self.Box.energy_str
+        momx_str = self.Box.momx_str
+        momy_str = self.Box.momy_str
+        momz_str = self.Box.momz_str
+
+        return self.Calculator.int_energy(self.Box.get_hydrodata(energy_str,
+                                                                 self.Calculator.dtype),
+                                          self.Box.get_hydrodata(density_str,
+                                                                 self.Calculator.dtype),
+                                          self.Box.get_hydrodata(momx_str,
+                                                                 self.Calculator.dtype),
+                                          self.Box.get_hydrodata(momy_str,
+                                                                 self.Calculator.dtype),
+                                          self.Box.get_hydrodata(momz_str,
+                                                                 self.Calculator.dtype))
+
     def get_pressure(self, DE_flag, gamma):
         '''
         Calculate and return the pressure for cells in Box
@@ -79,9 +106,9 @@ class ChollaBoxHydroCalc:
                                                  gamma)
 
 
-    def get_intenergy(self, DE_flag):
+    def get_specintenergy(self, DE_flag):
         '''
-        Calculate and return the internal energy for cells in Box
+        Calculate and return the specific internal energy for cells in Box
 
         Args:
             DE_flag (bool): whether to use dual-energy formalism
@@ -93,7 +120,7 @@ class ChollaBoxHydroCalc:
             gasenergy_str = self.Box.gasenergy_str
             density_str = self.Box.density_str
 
-            return self.Calculator.intenergy_DE(self.Box.get_hydrodata(gasenergy_str,
+            return self.Calculator.specintenergy_DE(self.Box.get_hydrodata(gasenergy_str,
                                                                        self.Calculator.dtype),
                                                 self.Box.get_hydrodata(density_str,
                                                                        self.Calculator.dtype))
@@ -104,7 +131,7 @@ class ChollaBoxHydroCalc:
             momy_str = self.Box.momy_str
             momz_str = self.Box.momz_str
 
-            return self.Calculator.intenergy_noDE(self.Box.get_hydrodata(energy_str,
+            return self.Calculator.specintenergy_noDE(self.Box.get_hydrodata(energy_str,
                                                                          self.Calculator.dtype),
                                                   self.Box.get_hydrodata(density_str,
                                                                          self.Calculator.dtype),
