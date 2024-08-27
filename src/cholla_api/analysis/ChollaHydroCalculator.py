@@ -437,6 +437,41 @@ class ChollaHydroCalculator:
         return arr
  
 
+    def Doppler_param_Hydrogen(self, temp):
+        '''
+        Calculate the Doppler broadening parameter for distribution of Hydrogen
+            in units of [cm s-1]
+
+        Args:
+            temp (arr): temperature of Hydrogen distribution
+        '''
+
+        assert np.array_equal(temp.shape, self.dims)
+
+        # initialize array with dims shape
+        arr = self.create_arr()
+
+        arr[:] = np.sqrt(2. * self.kB * temp / self.mp)
+        
+        return arr
+
+    def Doppler_param_Helium(self, temp):
+        '''
+        Calculate the Doppler broadening parameter for distribution of Helium
+
+        Args:
+            temp (arr): temperature of Helium distribution
+        '''
+
+        assert np.array_equal(temp.shape, self.dims)
+
+        # initialize array with dims shape
+        arr = self.create_arr()
+
+        arr[:] = np.sqrt(2. * self.kB * temp / (4 * self.mp))
+
+        return arr
+
     def create_phase(self, log_temp, log_overdensity):
         '''
         Create a 2D histogram for temperature and overdensity. Designed for
