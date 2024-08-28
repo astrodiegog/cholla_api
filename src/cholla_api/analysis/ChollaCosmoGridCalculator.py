@@ -1,13 +1,12 @@
 import numpy as np
 
-class ChollaCosmoGridCalculator:
+class ChollaCosmologyHead:
     '''
-    Cholla Cosmology Grid Calculator object
-        Serves as a calculator for cosmology-related values given a discretized
-            ChollaGrid object. 
+    Cholla Cosmology Head
+        Serves as a header object that holds information that helps define a
+            specific cosmology
         
         Initialized with:
-        - ChollaGrid (ChollaGrid): ChollaGrid object
         - OmegaM (float): present-day energy density parameter for matter
         - OmegaR (float): present-day energy density parameter for radiation
         - OmegaK (float): present-day energy density parameter for spatial curvature
@@ -16,17 +15,10 @@ class ChollaCosmoGridCalculator:
         - wa (float): linear term in dark energy equation of state
         - H0 (float): present-day Hubble parameter in units of [km / s / Mpc]
 
-    Values are returned in code units unless otherwise specified.
     '''
     
-    def __init__(self, ChollaGrid, OmegaM, OmegaR, OmegaK, OmegaL, w0, wa, H0):
+    def __init__(self, OmegaM, OmegaR, OmegaK, OmegaL, w0, wa, H0):
         
-        # current implementation only works for cube grid
-        assert ChollaGrid.nx_global == ChollaGrid.ny_global
-        assert ChollaGrid.nx_global == ChollaGrid.nz_global
-        assert ChollaGrid.Lx == ChollaGrid.Ly
-        assert ChollaGrid.Lx == ChollaGrid.Lz
-
         # start with constants !
         self.Msun_cgs = 1.98847e33 # Solar Mass in grams
         self.kpc_cgs = 3.0857e21 # kiloparsecs in centimeters
@@ -41,11 +33,6 @@ class ChollaCosmoGridCalculator:
 
         self.kpc3_cgs = self.kpc_cgs * self.kpc_cgs * self.kpc_cgs
         self.Mpc3_cgs = self.Mpc_cgs * self.Mpc_cgs * self.Mpc_cgs
-
-        # save cool attrs
-        self.nx = ChollaGrid.nx_global
-        self.ny = ChollaGrid.ny_global
-        self.nz = ChollaGrid.nz_global
 
         # present-day energy density for matter, radiation, curvature, and Dark Energy
         self.OmegaM = OmegaM
@@ -64,9 +51,6 @@ class ChollaCosmoGridCalculator:
         # dimensionless hubble parameter
         self.h_cosmo = self.H0 / 100.
 
-        # NOTE: dx is saved in [kiloparsecs] ! convert to [h-1 kpc]
-        self.dx_h = ChollaGrid.dx / self.h_cosmo
-
         # Hubble time (1/H0)
         self.t_H0_cgs = 1. / self.H0_cgs # in seconds
         self.t_H0_gyrs = self.t_H0_cgs / self.Gyr_cgs # in Gyrs
@@ -77,7 +61,6 @@ class ChollaCosmoGridCalculator:
         
         # critical density in units of [h2 Msun kpc-3]
         self.rho_crit0_cosmo = self.rho_crit0_cgs * (self.kpc3_cgs) / (self.Msun_cgs) / self.h_cosmo / self.h_cosmo
-
 
         # Normalization factors from Initialize Cosmology
         self.r0_DM = ChollaGrid.dx
@@ -111,51 +94,142 @@ class ChollaCosmoGridCalculator:
         self.energy_cosmo2cgs = 1. / self.mom_cgs2cosmo
 
 
+class ChollaCosmoCalculator:
+    '''
+    Cholla Cosmological Calculator object
+        Serves as a calculator where the calculated values have some expected
+            size and datatype (default is float). Assert that inputs are of same
+            shape as dims that was used to initialize this calculator. To
+            complete some analysis, this ChollaCalculator will be the mediator
+            that will act on the primitive saved values. Acts on a specific
+            snapshot to convert between physical and comoving units
 
-    def get_Hubble(self, a):
+        Initialized with:
+            snapHead (ChollaSnapHead): provides current redshift
+            cosmoHead (ChollaCosmologyHead): provides helpful information of cosmology & units
+            dims (tuple): size of data sets to act on
+            dtype (np type): (optional) numpy precision to initialize output arrays
+
+    Values are returned in code units unless otherwise specified.
+    '''
+    def __init__(self, snapHead, cosmoHead, dims, dtype=np.float32):
+        self.dims = dims
+        self.dtype = dtype
+        self.snapHead = snapHead
+        self.cosmoHead = cosmoHead
+
+    def create_arr(self):
         '''
-        Return the Hubble parameter at some scale factor
+        Create and return an empty array
 
         Args:
-            a (float): scale factor
+            ...
+        Returns:
+            (arr): array of initialized dimensions and datatype
+        '''
+
+        return np.zeros(self.dims, dtype=self.dtype)
+
+
+    def Hubble(self):
+        '''
+        Return the current Hubble parameter
+
+        Args:
+            ...
         Returns:
             H (float): Hubble parameter (km/s/Mpc)
         '''
 
-        a2 = a * a
-        a3 = a2 * a
-        a4 = a3 * a
-        DE_factor = (a)**(-3. * (1. + self.w0 + self.wa))
-        DE_factor *= np.exp(-3. * self.wa * (1. - a))
+        a2 = self.snapHead.a * self.snapHead.a
+        a3 = a2 * self.snapHead.a
+        a4 = a3 * self.snapHead.a
+        DE_factor = (self.snapHead.a)**(-3. * (1. + self.cosmoHead.w0 + self.cosmoHead.wa))
+        DE_factor *= np.exp(-3. * self.cosmoHead.wa * (1. - self.snapHead.a))
 
         H0_factor = (self.Omega_R / a4) + (self.Omega_M / a3)
         H0_factor += (self.Omega_K / a2) + (self.Omega_L * DE_factor)
 
-        return self.H0 * np.sqrt(H0_factor)
+        return self.cosmoHead.H0 * np.sqrt(H0_factor)
 
-    def get_dxproper(self, a):
+    def dxproper(self, dx):
         '''
         Return the proper distance between cells
 
         Args:
-            a (float): scale factor
+            dx (float): comoving distance between cells (kpc)
         Returns:
             (float): differential cell distance (h^-1 Mpc)
         '''
-        dx_cgs = self.dx_h * self.kpc_cgs # h^-1 kpc * (#cm / kpc) =  h^-1 cm
-        dx_Mpc = dx_cgs / self.Mpc_cgs # h^-1 cm / (#cm / Mpc) = h^-1 Mpc
+        # convert [kpc] to [h-1 kpc]
+        dx_h = dx / self.cosmoHead.h_cosmo
 
-        return dx_Mpc * a
+        dx_cgs = self.dx_h * self.cosmoHead.kpc_cgs # h^-1 kpc * (#cm / kpc) =  h^-1 cm
+        dx_Mpc = dx_cgs / self.cosmoHead.Mpc_cgs # h^-1 cm / (#cm / Mpc) = h^-1 Mpc
 
-    def get_dvHubble(self, a):
+        return dx_Mpc * self.snapHead.a
+
+    def dvHubble(self, dx):
         '''
         Return the Hubble flow through a cell
 
         Args:
-            a (float): scale factor
+            dx (float): comoving distance between cells (kpc)
         Returns:
             (float): Hubble flow over a cell (km/s)
         '''
 
-        return self.get_Hubble(a) * self.get_dxproper(a)
+        return self.Hubble() * self.dxproper(dx)
+
+    
+    def create_arr(self):
+        '''
+        Create and return an empty array
+
+        Args:
+            ...
+        Returns:
+            (arr): array of initialized dimensions and datatype
+        '''
+
+        return np.zeros(self.dims, dtype=self.dtype)
+
+    def physical_density(self, density_comov):
+        '''
+        Calculate the physical density from a comoving density
+
+        Args:
+            density_comov (arr): comoving density
+        Returns:
+            arr (arr): array that will hold data
+        '''
+        assert np.array_equal(density_comov.shape, self.dims)
+
+        # initialize array with dims shape
+        arr = self.create_arr()
+
+        a3 = self.snapHead.a * self.snapHead.a * self.snapHead.a
+        arr[:] = density_comov / a3
+
+        return arr
+
+    def physical_length(self, length_comov):
+        '''
+        Calculate the physical length from a comoving length
+
+        Args:
+            length_comov (arr): comoving length
+        Returns:
+            arr (arr): array that will hold data
+        '''
+        assert np.array_equal(length_comov.shape, self.dims)
+
+        # initialize array with dims shape
+        arr = self.create_arr()
+
+        arr[:] = length_comov * self.snapHead.a
+
+        return arr
+
+
 
