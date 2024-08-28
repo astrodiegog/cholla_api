@@ -86,91 +86,99 @@ class ChollaSnap:
         self.SnapHead = ChollaSnapHead
         self.SnapPath = RunPath + '/' + str(self.SnapHead.nSnap)
 
-    def get_hydroboxdata(self, ChollaBoxHead, key, dtype=np.float32):
+    def get_hydroboxdata(self, chBoxHead, chMacroFlags, key, dtype=np.float32):
         '''
         Grab hydro data for a specific Box
 
         Args:
-            ChollaBoxHead (ChollaBoxHead): head for box to use
+            chBoxHead (ChollaBoxHead): head for box to use
+            chMacroFlags (ChollaMacroFlags): ChollaMacroFlags, holding macro
+                compiling information
             key (str): key to access data from hydro hdf5 file
             dtype (np type): (optional) numpy precision to use
         Returns
             (arr): array holding data
         '''
 
-        box = ChollaBox(self.SnapPath, ChollaBoxHead)
+        box = ChollaBox(self.SnapPath, chBoxHead, chMacroFlags)
 
         return box.get_hydrodata(key, dtype)
 
-    def get_particleboxdata(self, ChollaBoxHead, key, dtype=np.float32):
+    def get_particleboxdata(self, chBoxHead, chMacroFlags, key, dtype=np.float32):
         '''
         Grab particle data for a specific Box
 
         Args:
-            ChollaBoxHead (ChollaBoxHead): head for box to use
+            chBoxHead (ChollaBoxHead): head for box to use
+            chMacroFlags (ChollaMacroFlags): ChollaMacroFlags, holding macro
+                compiling information
             key (str): key to access data from particle hdf5 file
             dtype (np type): (optional) numpy precision to use
         Returns
             (arr): array holding data
         '''
 
-        box = ChollaBox(self.SnapPath, ChollaBoxHead)
+        box = ChollaBox(self.SnapPath, chBoxHead, chMacroFlags)
 
         return box.get_particledata(key, dtype)
 
-    def get_hydrodata(self, ChollaGrid, key, dtype=np.float32):
+    def get_hydrodata(self, chGrid, chMacroFlags, key, dtype=np.float32):
         '''
         Grab hydro data for all boxes and concatenate data
 
         Args:
-            ChollaGrid (ChollaGrid): grid holding boxheads
+            chGrid (ChollaGrid): grid holding boxheads
+            chMacroFlags (ChollaMacroFlags): ChollaMacroFlags, holding macro
+                compiling information
             key (str): key to access data from hydro hdf5 file
         Returns:
             arr (arr): array holding global data
         '''
 
-        arr = np.zeros((ChollaGrid.nx_global, ChollaGrid.ny_global, ChollaGrid.nz_global), dtype=dtype)
+        arr = np.zeros((chGrid.nx_global, chGrid.ny_global, chGrid.nz_global), dtype=dtype)
 
-        for boxhead in ChollaGrid.get_BoxHeads():
-            box = ChollaBox(self.SnapPath, boxhead)
+        for boxhead in chGrid.get_BoxHeads():
+            box = ChollaBox(self.SnapPath, boxhead, chMacroFlags)
             boxdata = box.get_hydrodata(key, dtype)
             box.place_data(boxdata, arr)
 
         return arr
 
-    def get_particledata(self, ChollaGrid, key, dtype=np.float32):
+    def get_particledata(self, chGrid, chMacroFlags, key, dtype=np.float32):
         '''
         Grab particle data for all boxes and concatenate data
 
         Args:
-            ChollaGrid (ChollaGrid): grid holding boxheads
+            chGrid (ChollaGrid): grid holding boxheads
+            chMacroFlags (ChollaMacroFlags): ChollaMacroFlags, holding macro
+                compiling information
             key (str): key to access data from particle hdf5 file
         Returns:
             arr (arr): array holding global data
         '''
 
         if (key == "density"):
-            arr = np.zeros((ChollaGrid.nx_global, ChollaGrid.ny_global, ChollaGrid.nz_global), dtype=dtype)
+            arr = np.zeros((chGrid.nx_global, chGrid.ny_global, chGrid.nz_global), dtype=dtype)
 
-            for boxhead in ChollaGrid.get_BoxHeads():
-                box = ChollaBox(self.SnapPath, boxhead)
+            for boxhead in chGrid.get_BoxHeads():
+                box = ChollaBox(self.SnapPath, boxhead, chMacroFlags)
                 boxdata = box.get_particledata(key, dtype)
                 box.place_data(boxdata, arr)
         else:
             nparts_tot = 0
-            nparts_local = np.zeros(ChollaGrid.nprocs, dtype=int)
-            nparts_offsets = np.zeros(ChollaGrid.nprocs, dtype=int)
+            nparts_local = np.zeros(chGrid.nprocs, dtype=int)
+            nparts_offsets = np.zeros(chGrid.nprocs, dtype=int)
 
-            for boxhead in ChollaGrid.get_BoxHeads():
-                box = ChollaBox(self.SnapPath, boxhead)
+            for boxhead in chGrid.get_BoxHeads():
+                box = ChollaBox(self.SnapPath, boxhead, chMacroFlags)
                 nparts_offsets[box.BoxHead.nBox] = nparts_tot
                 nparts_local[box.BoxHead.nBox] = box.get_nparts()
                 nparts_tot += nparts_local[box.BoxHead.nBox]
 
             arr = np.zeros(int(nparts_tot), dtype=dtype)
 
-            for boxhead in ChollaGrid.get_BoxHeads():
-                box = ChollaBox(self.SnapPath, boxhead)
+            for boxhead in chGrid.get_BoxHeads():
+                box = ChollaBox(self.SnapPath, boxhead, chMacroFlags)
                 nStart = nparts_offsets[box.BoxHead.nBox]
                 nLocal = nparts_local[box.BoxHead.nBox]
                 nEnd = nStart + nLocal

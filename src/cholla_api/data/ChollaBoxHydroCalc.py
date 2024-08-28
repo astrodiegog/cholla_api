@@ -11,11 +11,14 @@ class ChollaBoxHydroCalc:
 
         Initialized with:
         - ChollaBox (ChollaBox): ChollaBox object
-        - dtype (datatype): precision to compute data
+        - chMacroFlags (ChollaMacroFlags): ChollaMacroFlags, holding macro
+                compiling information
+        - dtype (datatype): (optional) precision to compute data
     '''
     
-    def __init__(self, ChollaBox, dtype=np.float32):
+    def __init__(self, ChollaBox, chMacroFlags, dtype=np.float32):
         self.Box = ChollaBox
+        self.DE_flag = chMacroFlags.DualEnergy
         self.Calculator = ChollaHydroCalculator(self.Box.BoxHead.local_dims, dtype=dtype)
 
     def get_vmag(self):
@@ -69,18 +72,17 @@ class ChollaBoxHydroCalc:
                                           self.Box.get_hydrodata(momz_str,
                                                                  self.Calculator.dtype))
 
-    def get_pressure(self, DE_flag, gamma):
+    def get_pressure(self, gamma):
         '''
         Calculate and return the pressure for cells in Box
 
         Args:
-            DE_flag (bool): whether to use dual-energy formalism
             gamma (float): ratio of specific heats
         Returns:
             (arr): pressure
         '''
 
-        if DE_flag:
+        if self.DE_flag:
             gasenergy_str = self.Box.gasenergy_str
 
             return self.Calculator.pressure_DE(self.Box.get_hydrodata(gasenergy_str,
@@ -106,17 +108,17 @@ class ChollaBoxHydroCalc:
                                                  gamma)
 
 
-    def get_specintenergy(self, DE_flag):
+    def get_specintenergy(self):
         '''
         Calculate and return the specific internal energy for cells in Box
 
         Args:
-            DE_flag (bool): whether to use dual-energy formalism
+            ...
         Returns:
             (arr): internal energy
         '''
 
-        if DE_flag:
+        if self.DE_flag:
             gasenergy_str = self.Box.gasenergy_str
             density_str = self.Box.density_str
 

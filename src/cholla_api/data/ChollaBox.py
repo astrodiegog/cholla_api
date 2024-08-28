@@ -55,15 +55,18 @@ class ChollaBox:
 
         Initialized with:
             SnapPath (str): path to a snapshot directory
-            ChollaBoxHead (ChollaBoxHead): Cholla Box Head object connecting
-                box to rest of volume
+            chBoxHead (ChollaBoxHead): Cholla Box Head object connecting box to 
+                rest of volume
+            chMacroFlags (ChollaMacroFlags): ChollaMacroFlags, holding macro
+                compiling information
     '''
     
-    def __init__(self, SnapPath, ChollaBoxHead):
+    def __init__(self, SnapPath, chBoxHead, chMacroFlags):
         self.BoxHead = ChollaBoxHead
         self.SnapPath = SnapPath
 
         # key strings hard coded in https://github.com/cholla-hydro/cholla/wiki/Output
+        # using Makefile Parameter flags in https://github.com/cholla-hydro/cholla/wiki/Makefile-Parameters
 
         # hydro keys
         self.energy_str = "Energy"
@@ -73,40 +76,50 @@ class ChollaBox:
         self.momz_str = "momentum_z"
         self.gasenergy_str = "GasEnergy"
         
-        # chemical species keys
-        self.HIdensity_str = "HI_density"
-        self.HIIdensity_str = "HII_density"
-        self.HeIdensity_str = "HeI_density"
-        self.HeIIdensity_str = "HeII_density"
-        self.HeIIIdensity_str = "HeIII_density"
-        self.edensity_str = "e_density"
-        self.temp_str = "temperature"
+        if chMacroFlag.Cooling_GPU:
+            # chemical species keys
+            self.HIdensity_str = "HI_density"
+            self.HIIdensity_str = "HII_density"
+            self.HeIdensity_str = "HeI_density"
+            self.HeIIdensity_str = "HeII_density"
+            self.HeIIIdensity_str = "HeIII_density"
+            self.edensity_str = "e_density"
+            self.temp_str = "temperature"
 
-        self.hydro_allkeys = {self.energy_str, self.density_str, self.momx_str, 
-                              self.momy_str, self.momz_str, self.gasenergy_str,
-                              self.HIdensity_str, self.HIIdensity_str,
-                              self.HeIdensity_str, self.HeIIdensity_str, self.HeIIIdensity_str,
-                              self.edensity_str, self.temp_str}
+            self.hydro_allkeys = {self.energy_str, self.density_str, self.momx_str, 
+                                  self.momy_str, self.momz_str, self.gasenergy_str,
+                                  self.HIdensity_str, self.HIIdensity_str,
+                                  self.HeIdensity_str, self.HeIIdensity_str, self.HeIIIdensity_str,
+                                  self.edensity_str, self.temp_str}
+        else:
+            self.hydro_allkeys = {self.energy_str, self.density_str, self.momx_str,
+                                  self.momy_str, self.momz_str, self.gasenergy_str}
 
 
-        # particle keys
-        self.densityCIC_str = "density"
-        self.particleID_str = "particle_IDs"
-        self.posx_str = "pos_x"
-        self.posy_str = "pos_y"
-        self.posz_str = "pos_z"
-        self.velx_str = "vel_x"
-        self.vely_str = "vel_y"
-        self.velz_str = "vel_z"
+        if chMacroFlag.Particles:
+            # particle keys
+            self.densityCIC_str = "density"
+            self.particleID_str = "particle_IDs"
+            self.posx_str = "pos_x"
+            self.posy_str = "pos_y"
+            self.posz_str = "pos_z"
+            self.velx_str = "vel_x"
+            self.vely_str = "vel_y"
+            self.velz_str = "vel_z"
 
-        self.particle_allkeys = {self.densityCIC_str, self.particleID_str,
-                                    self.posx_str, self.posy_str, self.posz_str,
-                                    self.velx_str, self.vely_str, self.velz_str}
+            self.particle_allkeys = {self.densityCIC_str, self.particleID_str,
+                                     self.posx_str, self.posy_str, self.posz_str,
+                                     self.velx_str, self.vely_str, self.velz_str}
+        else:
+            self.particle_allkeys = {}
+        
+        if chMacroFlag.Gravity:
+            # gravity keys
+            self.potential_str = "potential"
 
-        # gravity keys
-        self.potential_str = "potential"
-
-        self.gravity_allkeys = {self.potential_str}
+            self.gravity_allkeys = {self.potential_str}
+        else:
+            self.gravity_allkeys = {}
 
     
     def get_nparts(self):

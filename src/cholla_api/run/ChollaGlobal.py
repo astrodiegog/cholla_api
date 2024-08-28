@@ -1,11 +1,10 @@
 import numpy as np
 import h5py
 
+from cholla_api.run.ChollaMacroFlags import ChollaMacroFlags
 from cholla_api.snap.ChollaSnap import ChollaSnapHead
 from cholla_api.snap.ChollaSnap import ChollaSnap
 from cholla_api.data.ChollaBox import ChollaBox
-
-a = "In the future, I can just hold a MacroFlags"
 
 
 class ChollaGlobal:
@@ -14,20 +13,15 @@ class ChollaGlobal:
         Holds information related to an entire simulation run. Initialized with
         - basePath (str): the directory the simulation is held in
         - chGrid (ChollaGrid): ChollaGrid object, holding domain information
-        - gravity_flag (bool): whether gravity data was saved
-        - particles_flag (bool): whether particle data was saved
-        - cosmo_flag (bool): (optional) whether cosmology type was used
+        - chMacroFlags (ChollaMacroFlags): ChollaMacroFlags, holding macro compiling information
         - data_subdir (str): (optional) where data is placed within basePath
     '''
 
-    def __init__(self, basePath,  ChollaGrid, gravity_flag, particles_flag, cosmo_flag, data_subdir = '/data'):
-
+    def __init__(self, basePath,  chGrid, chMacroFlags, data_subdir = '/data'):
         self.dataPath = basePath + data_subdir
-        
         self.grid = ChollaGrid
-        self.gravity_flag = gravity_flag
-        self.particles_flag = particles_flag
-        self.cosmo_flag = cosmo_flag
+        self.macroFlags = chMacroFlags
+
 
     def test_domaindecomp(self, nSnap=1):
         '''
@@ -97,9 +91,9 @@ class ChollaGlobal:
         box = self.get_snapbox(nSnap, box_for_attrs)
         snap.SnapHead.set_timeinfo(box)
 
-        if self.cosmo_flag:
+        if self.macroFlags.Cosmology:
             snap.SnapHead.set_cosmoinfo(box)
-        if self.particles_flag:
+        if self.macroFlags.Particles:
             snap.SnapHead.set_particleinfo(box)
 
         return snap
@@ -138,7 +132,7 @@ class ChollaGlobal:
         self.gamma = fObj.attrs['gamma'].item()
 
         # grab cosmology params
-        if self.cosmo_flag:
+        if self.macroFlags.Cosmology:
             self.H0 = fObj.attrs['H0'].item()
             self.Omega_L = fObj.attrs['Omega_L'].item()
             self.Omega_M = fObj.attrs['Omega_M'].item()
@@ -146,7 +140,7 @@ class ChollaGlobal:
         fObj.close()
 
         # grab particle info
-        if self.particles_flag:
+        if self.macroFlags.Particles:
             fObj = h5py.File(box.get_particlefPath(), 'r')
             self.paticle_mass_unit = fObj.attrs['particle_mass'].item()
             fObj.close()

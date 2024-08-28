@@ -12,8 +12,10 @@ class ChollaSnapHydroCalc:
         This object ties the hydro calculator object to a box's dimensions
 
         Initialized with:
-        - ChollaSnap (ChollaSnap): ChollaSnap object
-        - ChollaGrid (ChollaGrid): ChollaGrid object
+        - chSnap (ChollaSnap): ChollaSnap object
+        - chGrid (ChollaGrid): ChollaGrid object
+        - chMacroFlags (ChollaMacroFlags): ChollaMacroFlags, holding macro
+                compiling information
         - dtype (datatype): (optional) precision to calculate data
         - calc_box (bool): (optional) whether to use ChollaBoxHydroCalculator object
 
@@ -24,12 +26,13 @@ class ChollaSnapHydroCalc:
             to loading large numpy arrays into memory !
     '''
     
-    def __init__(self, ChollaSnap, ChollaGrid, dtype=np.float32, calc_box=True):
+    def __init__(self, chSnap, chGrid, chMacroFlags, dtype=np.float32, calc_box=True):
         self.Snap = ChollaSnap
         self.Grid = ChollaGrid
         self.Calculator = ChollaHydroCalculator((self.Grid.nx_global, self.Grid.ny_global, 
                                                  self.Grid.nz_global), 
                                                 dtype=dtype)
+        self.MacroFlags = chMacroFlags
         self.boxcalc = calc_box
         if self.boxcalc:
             from cholla_api.data.ChollaBoxHydroCalc import ChollaBoxHydroCalc
@@ -51,8 +54,9 @@ class ChollaSnapHydroCalc:
             vmag_snap = self.Calculator.create_arr()
 
             for boxhead in self.Grid.get_BoxHeads():
-                box = ChollaBox(self.Snap.SnapPath, boxhead)
-                boxhydrocalc = ChollaBoxHydroCalc(box, self.Calculator.dtype)
+                box = ChollaBox(self.Snap.SnapPath, boxhead, self.MacroFlags)
+                boxhydrocalc = ChollaBoxHydroCalc(box, self.MacroFlags, 
+                                                  self.Calculator.dtype)
                 vmag_box = boxhydrocalc.get_vmag()
                 box.place_data(vmag_box, vmag_snap)
 
@@ -63,14 +67,14 @@ class ChollaSnapHydroCalc:
             momy_str = self.box0.momy_str
             momz_str = self.box0.momz_str
 
-            return self.Calculator.velmag(self.Snap.get_hydrodata(self.Grid, density_str, 
-                                                                  self.Calculator.dtype),
-                                          self.Snap.get_hydrodata(self.Grid, momx_str, 
-                                                                  self.Calculator.dtype),
-                                          self.Snap.get_hydrodata(self.Grid, momy_str, 
-                                                                  self.Calculator.dtype),
-                                          self.Snap.get_hydrodata(self.Grid, momz_str, 
-                                                                  self.Calculator.dtype))
+            return self.Calculator.velmag(self.Snap.get_hydrodata(self.Grid, self.MacroFlags, 
+                                                                  density_str, self.Calculator.dtype),
+                                          self.Snap.get_hydrodata(self.Grid, self.MacroFlags, 
+                                                                  momx_str, self.Calculator.dtype),
+                                          self.Snap.get_hydrodata(self.Grid, self.MacroFlags,
+                                                                  momy_str, self.Calculator.dtype),
+                                          self.Snap.get_hydrodata(self.Grid, self.MacroFlags,
+                                                                  momz_str, self.Calculator.dtype))
 
     def get_intenergy(self):
         '''
@@ -86,8 +90,9 @@ class ChollaSnapHydroCalc:
             intenergy_snap = self.Calculator.create_arr()
 
             for boxhead in self.Grid.get_BoxHeads():
-                box = ChollaBox(self.Snap.SnapPath, boxhead)
-                boxhydrocalc = ChollaBoxHydroCalc(box, self.Calculator.dtype)
+                box = ChollaBox(self.Snap.SnapPath, boxhead, self.MacroFlags)
+                boxhydrocalc = ChollaBoxHydroCalc(box, self.MacroFlags,
+                                                  self.Calculator.dtype)
                 intenergy_box = boxhydrocalc.get_intenergy()
                 box.place_data(intenergy_box, vmag_snap)
 
@@ -100,24 +105,23 @@ class ChollaSnapHydroCalc:
             momy_str = self.Box.momy_str
             momz_str = self.Box.momz_str
 
-            return self.Calculator.int_energy(self.Snap.get_hydrodata(self.Grid, energy_str,
-                                                                      self.Calculator.dtype),
-                                              self.Snap.get_hydrodata(self.Grid, density_str,
-                                                                      self.Calculator.dtype),
-                                              self.Snap.get_hydrodata(self.Grid, momx_str,
-                                                                      self.Calculator.dtype),
-                                              self.Snap.get_hydrodata(self.Grid, momy_str,
-                                                                      self.Calculator.dtype),
-                                              self.Snap.get_hydrodata(self.Grid, momz_str,
-                                                                      self.Calculator.dtype))
+            return self.Calculator.int_energy(self.Snap.get_hydrodata(self.Grid, self.MacroFlags,
+                                                                      energy_str, self.Calculator.dtype),
+                                              self.Snap.get_hydrodata(self.Grid, self.MacroFlags
+                                                                      density_str, self.Calculator.dtype),
+                                              self.Snap.get_hydrodata(self.Grid, self.MacroFlags,
+                                                                      momx_str, self.Calculator.dtype),
+                                              self.Snap.get_hydrodata(self.Grid, self.MacroFlags, 
+                                                                      momy_str, self.Calculator.dtype),
+                                              self.Snap.get_hydrodata(self.Grid, self.MacroFlags,
+                                                                      momz_str, self.Calculator.dtype))
 
 
-    def get_pressure(self, DE_flag, gamma):
+    def get_pressure(self, gamma):
         '''
         Calculate and return the pressure
 
         Args:
-            DE_flag (bool): whether to use dual-energy formalism
             gamma (float): ratio of specific heats
         Returns:
             (arr): pressure
@@ -127,18 +131,19 @@ class ChollaSnapHydroCalc:
             pressure_snap = self.Calculator.create_arr()
 
             for boxhead in self.Grid.get_BoxHeads():
-                box = ChollaBox(self.Snap.SnapPath, boxhead)
-                boxhydrocalc = ChollaBoxHydroCalc(box, self.Calculator.dtype)
-                pressure_box = boxhydrocalc.get_pressure(DE_flag, gamma)
+                box = ChollaBox(self.Snap.SnapPath, boxhead, self.MacroFlags)
+                boxhydrocalc = ChollaBoxHydroCalc(box, self.MacroFlags, 
+                                                  self.Calculator.dtype)
+                pressure_box = boxhydrocalc.get_pressure(gamma)
                 box.place_data(pressure_box, pressure_snap)
 
             return pressure_snap
         else:
-            if DE_flag:
+            if self.MacroFlags.DualEnergy:
                 gasenergy_str = self.box0.gasenergy_str
 
-                return self.Calculator.pressure_DE(self.Snap.get_hydrodata(self.Grid, gasenergy_str,
-                                                                           self.Calculator.dtype),
+                return self.Calculator.pressure_DE(self.Snap.get_hydrodata(self.Grid, self.MacroFlags,
+                                                                           gasenergy_str, self.Calculator.dtype),
                                                    gamma)
             else:
                 energy_str = self.box0.energy_str
@@ -147,25 +152,25 @@ class ChollaSnapHydroCalc:
                 momy_str = self.box0.momy_str
                 momz_str = self.box0.momz_str
 
-                return self.Calculator.pressure_noDE(self.Snap.get_hydrodata(self.Grid, energy_str,
-                                                                             self.Calculator.dtype),
-                                                    self.Snap.get_hydrodata(self.Grid, density_str,
-                                                                             self.Calculator.dtype),
-                                                    self.Snap.get_hydrodata(self.Grid, momx_str,
-                                                                             self.Calculator.dtype),
-                                                    self.Snap.get_hydrodata(self.Grid, momy_str,
-                                                                             self.Calculator.dtype),
-                                                    self.Snap.get_hydrodata(self.Grid, momz_str,
-                                                                             self.Calculator.dtype),
-                                                    gamma)
+                return self.Calculator.pressure_noDE(self.Snap.get_hydrodata(self.Grid, self.MacroFlags, 
+                                                                             energy_str, self.Calculator.dtype),
+                                                     self.Snap.get_hydrodata(self.Grid, self.MacroFlags, 
+                                                                             density_str, self.Calculator.dtype),
+                                                     self.Snap.get_hydrodata(self.Grid, self.MacroFlags, 
+                                                                             momx_str, self.Calculator.dtype),
+                                                     self.Snap.get_hydrodata(self.Grid, self.MacroFlags, 
+                                                                             momy_str, self.Calculator.dtype),
+                                                     self.Snap.get_hydrodata(self.Grid, self.MacroFlags, 
+                                                                             momz_str, self.Calculator.dtype),
+                                                     gamma)
 
 
-    def get_specintenergy(self, DE_flag):
+    def get_specintenergy(self):
         '''
         Calculate and return the specific internal energy
 
         Args:
-            DE_flag (bool): whether to use dual-energy formalism
+            ...
         Returns:
             (arr): internal energy
         '''
@@ -174,37 +179,38 @@ class ChollaSnapHydroCalc:
             specintenergy_snap = self.Calculator.create_arr()
 
             for boxhead in self.Grid.get_BoxHeads():
-                box = ChollaBox(self.Snap.SnapPath, boxhead)
-                boxhydrocalc = ChollaBoxHydroCalc(box, self.Calculator.dtype)
-                specintenergy_box = boxhydrocalc.get_specintenergy(DE_flag)
+                box = ChollaBox(self.Snap.SnapPath, boxhead, self.MacroFlags)
+                boxhydrocalc = ChollaBoxHydroCalc(box, self.MacroFlags, 
+                                                  self.Calculator.dtype)
+                specintenergy_box = boxhydrocalc.get_specintenergy()
                 box.place_data(specintenergy_box, specintenergy_snap)
 
             return pressure_snap
         else:
             density_str = self.box0.density_str
-            if DE_flag:
+            if self.MacroFlags.DualEnergy:
                 gasenergy_str = self.box0.gasenergy_str
 
-                return self.Calculator.specintenergy_DE(self.Snap.get_hydrodata(self.Grid, gasenergy_str,
-                                                                                self.Calculator.dtype),
-                                                        self.Snap.get_hydrodata(self.Grid, density_str,
-                                                                                self.Calculator.dtype)) 
+                return self.Calculator.specintenergy_DE(self.Snap.get_hydrodata(self.Grid, self.MacroFlags,
+                                                                                gasenergy_str, self.Calculator.dtype),
+                                                        self.Snap.get_hydrodata(self.Grid, self.MacroFlags, 
+                                                                                density_str, self.Calculator.dtype)) 
             else:
                 energy_str = self.box0.energy_str
                 momx_str = self.box0.momx_str
                 momy_str = self.box0.momy_str
                 momz_str = self.box0.momz_str
 
-                return self.Calculator.specintenergy_noDE(self.Snap.get_hydrodata(self.Grid, energy_str,
-                                                                                  self.Calculator.dtype),
-                                                          self.Snap.get_hydrodata(self.Grid, density_str,
-                                                                                  self.Calculator.dtype),
-                                                          self.Snap.get_hydrodata(self.Grid, momx_str,
-                                                                                  self.Calculator.dtype),
-                                                          self.Snap.get_hydrodata(self.Grid, momy_str,
-                                                                                  self.Calculator.dtype),
-                                                          self.Snap.get_hydrodata(self.Grid, momz_str,
-                                                                                  self.Calculator.dtype))
+                return self.Calculator.specintenergy_noDE(self.Snap.get_hydrodata(self.Grid, self.MacroFlags,
+                                                                                  energy_str, self.Calculator.dtype),
+                                                          self.Snap.get_hydrodata(self.Grid, self.MacroFlags,
+                                                                                  density_str, self.Calculator.dtype),
+                                                          self.Snap.get_hydrodata(self.Grid, self.MacroFlags,
+                                                                                  momx_str, self.Calculator.dtype),
+                                                          self.Snap.get_hydrodata(self.Grid, self.MacroFlags,
+                                                                                  momy_str, self.Calculator.dtype),
+                                                          self.Snap.get_hydrodata(self.Grid, self.MacroFlags, 
+                                                                                  momz_str, self.Calculator.dtype))
 
     def get_gastemp(self, gamma, mu, energy_unit):
         '''
@@ -222,8 +228,9 @@ class ChollaSnapHydroCalc:
             gastemp_snap = self.Calculator.create_arr()
 
             for boxhead in self.Grid.get_BoxHeads():
-                box = ChollaBox(self.Snap.SnapPath, boxhead)
-                boxhydrocalc = ChollaBoxHydroCalc(box, self.Calculator.dtype)
+                box = ChollaBox(self.Snap.SnapPath, boxhead, self.MacroFlags)
+                boxhydrocalc = ChollaBoxHydroCalc(box, self.MacroFlags, 
+                                                  self.Calculator.dtype)
                 gastemp_box = boxhydrocalc.get_gastemp(gamma, mu, energy_unit)
                 box.place_data(gastemp_box, gastemp_snap)
 
@@ -232,10 +239,10 @@ class ChollaSnapHydroCalc:
             gasenergy_str = self.box0.gasenergy_str
             density_str = self.box0.density_str
 
-            return self.Calculator.gastemp(self.Snap.get_hydrodata(self.Grid, gasenergy_str,
-                                                                   self.Calculator.dtype),
-                                           self.Snap.get_hydrodata(self.Grid, density_str,
-                                                                   self.Calculator.dtype),
+            return self.Calculator.gastemp(self.Snap.get_hydrodata(self.Grid, self.MacroFlags, 
+                                                                   gasenergy_str, self.Calculator.dtype),
+                                           self.Snap.get_hydrodata(self.Grid, self.MacroFlags, 
+                                                                   density_str, self.Calculator.dtype),
                                            gamma, mu, energy_unit)
         
     def get_overdensity(self):
@@ -252,8 +259,9 @@ class ChollaSnapHydroCalc:
             overdensity_snap = self.Calculator.create_arr()
 
             for boxhead in self.Grid.get_BoxHeads():
-                box = ChollaBox(self.Snap.SnapPath, boxhead)
-                boxhydrocalc = ChollaBoxHydroCalc(box, self.Calculator.dtype)
+                box = ChollaBox(self.Snap.SnapPath, boxhead, self.MacroFlags)
+                boxhydrocalc = ChollaBoxHydroCalc(box, self.MacroFlags, 
+                                                  self.Calculator.dtype)
                 overdensity_box = boxhydrocalc.get_overdensity()
                 box.place_data(overdensity_box, overdensity_snap)
 
@@ -261,8 +269,8 @@ class ChollaSnapHydroCalc:
         else:
             density_str = self.box0.density_str
 
-            return self.Calculator.overdensity_mean(self.Snap.get_hydrodata(self.Grid, density_str,
-                                                                            self.Calculator.dtype))
+            return self.Calculator.overdensity_mean(self.Snap.get_hydrodata(self.Grid, self.MacroFlags, 
+                                                                            density_str, self.Calculator.dtype))
        
     def get_xprojection(self):
         '''
@@ -279,8 +287,9 @@ class ChollaSnapHydroCalc:
                                                      self.Grid.nz_global))
 
             for boxhead in self.Grid.get_BoxHeads():
-                box = ChollaBox(self.Snap.SnapPath, boxhead)
-                boxhydrocalc = ChollaBoxHydroCalc(box, self.Calculator.dtype)
+                box = ChollaBox(self.Snap.SnapPath, boxhead, self.MacroFlags)
+                boxhydrocalc = ChollaBoxHydroCalc(box, self.MacroFlags, 
+                                                  self.Calculator.dtype)
                 nx_box = boxhydrocalc.get_xprojection()
 
                 startX, startY, startZ = box.BoxHead.offset
@@ -293,8 +302,8 @@ class ChollaSnapHydroCalc:
             density_str = self.box0.density_str
 
             # x-projection uses k-index=0
-            return self.Calculator.densityk_projection(self.Snap.get_hydrodata(self.Grid, density_str,
-                                                                               self.Calculator.dtype), 
+            return self.Calculator.densityk_projection(self.Snap.get_hydrodata(self.Grid, self.MacroFlags,
+                                                                               density_str, self.Calculator.dtype), 
                                                        0)
     
     def get_yprojection(self):
@@ -312,8 +321,9 @@ class ChollaSnapHydroCalc:
                                                      self.Grid.nz_global))
 
             for boxhead in self.Grid.get_BoxHeads():
-                box = ChollaBox(self.Snap.SnapPath, boxhead)
-                boxhydrocalc = ChollaBoxHydroCalc(box, self.Calculator.dtype)
+                box = ChollaBox(self.Snap.SnapPath, boxhead, self.MacroFlags)
+                boxhydrocalc = ChollaBoxHydroCalc(box, self.MacroFlags, 
+                                                  self.Calculator.dtype)
                 ny_box = boxhydrocalc.get_yprojection()
 
                 startX, startY, startZ = box.BoxHead.offset
@@ -326,8 +336,8 @@ class ChollaSnapHydroCalc:
             density_str = self.box0.density_str
 
             # y-projection uses k-index=1
-            return self.Calculator.densityk_projection(self.Snap.get_hydrodata(self.Grid, density_str,
-                                                                               self.Calculator.dtype),
+            return self.Calculator.densityk_projection(self.Snap.get_hydrodata(self.Grid, self.MacroFlags, 
+                                                                               density_str, self.Calculator.dtype),
                                                        1)
 
     def get_zprojection(self):
@@ -345,8 +355,9 @@ class ChollaSnapHydroCalc:
                                                      self.Grid.ny_global))
 
             for boxhead in self.Grid.get_BoxHeads():
-                box = ChollaBox(self.Snap.SnapPath, boxhead)
-                boxhydrocalc = ChollaBoxHydroCalc(box, self.Calculator.dtype)
+                box = ChollaBox(self.Snap.SnapPath, boxhead, self.MacroFlags)
+                boxhydrocalc = ChollaBoxHydroCalc(box, self.MacroFlags,
+                                                  self.Calculator.dtype)
                 nz_box = boxhydrocalc.get_zprojection()
 
                 startX, startY, startZ = box.BoxHead.offset
@@ -359,8 +370,8 @@ class ChollaSnapHydroCalc:
             density_str = self.box0.density_str
 
             # z-projection uses k-index=2
-            return self.Calculator.densityk_projection(self.Snap.get_hydrodata(self.Grid, density_str,
-                                                                               self.Calculator.dtype),
+            return self.Calculator.densityk_projection(self.Snap.get_hydrodata(self.Grid, self.MacroFlags,
+                                                                               density_str, self.Calculator.dtype),
                                                        2)
 
 
@@ -381,8 +392,9 @@ class ChollaSnapHydroCalc:
             phasespace_snap = self.Calculator.create_subarr((49,49))
 
             for boxhead in self.Grid.get_BoxHeads():
-                box = ChollaBox(self.Snap.SnapPath, boxhead)
-                boxhydrocalc = ChollaBoxHydroCalc(box, self.Calculator.dtype)
+                box = ChollaBox(self.Snap.SnapPath, boxhead, self.MacroFlags)
+                boxhydrocalc = ChollaBoxHydroCalc(box, self.MacroFlags,
+                                                  self.Calculator.dtype)
                 phasespace_box, xbin, ybin  = boxhydrocalc.get_phasespace(gamma, mu, energy_unit)
                 phasespace_snap += phasespace_box
 
