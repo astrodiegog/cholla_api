@@ -63,11 +63,6 @@ class ChollaCosmologyHead:
         self.rho_crit0_cosmo = self.rho_crit0_cgs * (self.kpc3_cgs) / (self.Msun_cgs) / self.h_cosmo / self.h_cosmo
 
         # Normalization factors from Initialize Cosmology
-        self.r0_DM = ChollaGrid.dx
-        self.t0_DM = self.t_H0_cosmo
-        self.v0_DM = self.r0_DM / self.t0_DM / self.h_cosmo
-        self.rho0_DM = self.rho_crit0_cosmo * self.OmegaM
-
         self.r0_gas = 1.0 # simulation ran with gas in [h-1 kpc] (???????)
         self.t0_gas = self.t_H0_cosmo / self.h_cosmo
         self.v0_gas = self.r0_gas / self.t0_gas
@@ -147,8 +142,8 @@ class ChollaCosmoCalculator:
         DE_factor = (self.snapHead.a)**(-3. * (1. + self.cosmoHead.w0 + self.cosmoHead.wa))
         DE_factor *= np.exp(-3. * self.cosmoHead.wa * (1. - self.snapHead.a))
 
-        H0_factor = (self.Omega_R / a4) + (self.Omega_M / a3)
-        H0_factor += (self.Omega_K / a2) + (self.Omega_L * DE_factor)
+        H0_factor = (self.cosmoHead.OmegaR / a4) + (self.cosmoHead.OmegaM / a3)
+        H0_factor += (self.cosmoHead.OmegaK / a2) + (self.cosmoHead.OmegaL * DE_factor)
 
         return self.cosmoHead.H0 * np.sqrt(H0_factor)
 
@@ -164,7 +159,7 @@ class ChollaCosmoCalculator:
         # convert [kpc] to [h-1 kpc]
         dx_h = dx / self.cosmoHead.h_cosmo
 
-        dx_cgs = self.dx_h * self.cosmoHead.kpc_cgs # h^-1 kpc * (#cm / kpc) =  h^-1 cm
+        dx_cgs = dx_h * self.cosmoHead.kpc_cgs # h^-1 kpc * (#cm / kpc) =  h^-1 cm
         dx_Mpc = dx_cgs / self.cosmoHead.Mpc_cgs # h^-1 cm / (#cm / Mpc) = h^-1 Mpc
 
         return dx_Mpc * self.snapHead.a
