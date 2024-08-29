@@ -62,7 +62,7 @@ class ChollaBox:
     '''
     
     def __init__(self, SnapPath, chBoxHead, chMacroFlags):
-        self.BoxHead = ChollaBoxHead
+        self.BoxHead = chBoxHead
         self.SnapPath = SnapPath
 
         # key strings hard coded in https://github.com/cholla-hydro/cholla/wiki/Output
@@ -76,7 +76,7 @@ class ChollaBox:
         self.momz_str = "momentum_z"
         self.gasenergy_str = "GasEnergy"
         
-        if chMacroFlag.Cooling_GPU:
+        if chMacroFlags.Cooling_GPU:
             # chemical species keys
             self.HIdensity_str = "HI_density"
             self.HIIdensity_str = "HII_density"
@@ -96,7 +96,7 @@ class ChollaBox:
                                   self.momy_str, self.momz_str, self.gasenergy_str}
 
 
-        if chMacroFlag.Particles:
+        if chMacroFlags.Particles:
             # particle keys
             self.densityCIC_str = "density"
             self.particleID_str = "particle_IDs"
@@ -113,7 +113,7 @@ class ChollaBox:
         else:
             self.particle_allkeys = {}
         
-        if chMacroFlag.Gravity:
+        if chMacroFlags.Gravity:
             # gravity keys
             self.potential_str = "potential"
 
