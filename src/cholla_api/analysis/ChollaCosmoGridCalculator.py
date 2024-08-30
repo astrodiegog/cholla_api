@@ -102,29 +102,12 @@ class ChollaCosmoCalculator:
         Initialized with:
             snapHead (ChollaSnapHead): provides current redshift
             cosmoHead (ChollaCosmologyHead): provides helpful information of cosmology & units
-            dims (tuple): size of data sets to act on
-            dtype (np type): (optional) numpy precision to initialize output arrays
 
     Values are returned in code units unless otherwise specified.
     '''
-    def __init__(self, snapHead, cosmoHead, dims, dtype=np.float32):
-        self.dims = dims
-        self.dtype = dtype
+    def __init__(self, snapHead, cosmoHead):
         self.snapHead = snapHead
         self.cosmoHead = cosmoHead
-
-    def create_arr(self):
-        '''
-        Create and return an empty array
-
-        Args:
-            ...
-        Returns:
-            (arr): array of initialized dimensions and datatype
-        '''
-
-        return np.zeros(self.dims, dtype=self.dtype)
-
 
     def Hubble(self):
         '''
@@ -147,23 +130,7 @@ class ChollaCosmoCalculator:
 
         return self.cosmoHead.H0 * np.sqrt(H0_factor)
 
-    def dxproper(self, dx):
-        '''
-        Return the proper distance between cells
-
-        Args:
-            dx (float): comoving distance between cells (kpc)
-        Returns:
-            (float): differential cell distance (h^-1 Mpc)
-        '''
-        # convert [kpc] to [h-1 kpc]
-        dx_h = dx / self.cosmoHead.h_cosmo
-
-        dx_cgs = dx_h * self.cosmoHead.kpc_cgs # h^-1 kpc * (#cm / kpc) =  h^-1 cm
-        dx_Mpc = dx_cgs / self.cosmoHead.Mpc_cgs # h^-1 cm / (#cm / Mpc) = h^-1 Mpc
-
-        return dx_Mpc * self.snapHead.a
-
+    
     def dvHubble(self, dx):
         '''
         Return the Hubble flow through a cell
@@ -173,58 +140,47 @@ class ChollaCosmoCalculator:
         Returns:
             (float): Hubble flow over a cell (km/s)
         '''
+        # convert [kpc] to [h-1 kpc]
+        dx_h = dx / self.cosmoHead.h_cosmo
 
-        return self.Hubble() * self.dxproper(dx)
+        dxh_cgs = dx_h * self.cosmoHead.kpc_cgs # h^-1 kpc * (#cm / kpc) =  h^-1 cm
+        dxh_Mpc = dx_cgs / self.cosmoHead.Mpc_cgs # h^-1 cm / (#cm / Mpc) = h^-1 Mpc
+        
+        # convert to physical length
+        dxh_Mpc_phys = self.physical_length(dxh_Mpc)
 
-    
-    def create_arr(self):
-        '''
-        Create and return an empty array
+        return self.Hubble() * dxh_Mpc_phys
 
-        Args:
-            ...
-        Returns:
-            (arr): array of initialized dimensions and datatype
-        '''
-
-        return np.zeros(self.dims, dtype=self.dtype)
-
-    def physical_density(self, density_comov):
-        '''
-        Calculate the physical density from a comoving density
-
-        Args:
-            density_comov (arr): comoving density
-        Returns:
-            arr (arr): array that will hold data
-        '''
-        assert np.array_equal(density_comov.shape, self.dims)
-
-        # initialize array with dims shape
-        arr = self.create_arr()
-
-        a3 = self.snapHead.a * self.snapHead.a * self.snapHead.a
-        arr[:] = density_comov / a3
-
-        return arr
 
     def physical_length(self, length_comov):
         '''
         Calculate the physical length from a comoving length
 
         Args:
-            length_comov (arr): comoving length
+            length_comov (float): comoving length
         Returns:
+            length_phys (float): physical length
             arr (arr): array that will hold data
         '''
-        assert np.array_equal(length_comov.shape, self.dims)
 
-        # initialize array with dims shape
-        arr = self.create_arr()
+        length_phys = length_comov * self.snapHead.a
 
-        arr[:] = length_comov * self.snapHead.a
+        return length_comov
 
-        return arr
 
+    def physical_density(self, density_comov):
+        '''
+        Calculate the physical density from a comoving density
+
+        Args:
+            density_comov (float): comoving density
+        Returns:
+            density_phys (float): physical density
+        '''
+
+        a3 = self.snapHead.a * self.snapHead.a * self.snapHead.a
+        density_phys = density_comov / a3
+
+        return density_comov
 
 
