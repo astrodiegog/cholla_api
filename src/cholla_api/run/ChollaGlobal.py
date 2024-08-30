@@ -19,7 +19,7 @@ class ChollaGlobal:
 
     def __init__(self, basePath,  chGrid, chMacroFlags, data_subdir = '/data'):
         self.dataPath = basePath + data_subdir
-        self.grid = ChollaGrid
+        self.grid = chGrid
         self.macroFlags = chMacroFlags
 
 
