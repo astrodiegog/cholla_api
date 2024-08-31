@@ -73,7 +73,7 @@ class ChollaGlobal:
         snap = ChollaSnap(self.dataPath, snaphead)
         boxhead = self.grid.get_BoxHead(nBox)
 
-        return ChollaBox(snap.SnapPath, boxhead)
+        return ChollaBox(snap.SnapPath, boxhead, self.macroFlags)
 
     def get_snap(self, nSnap, box_for_attrs=0):
         '''
