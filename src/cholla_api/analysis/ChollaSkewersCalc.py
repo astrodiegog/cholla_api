@@ -1,6 +1,9 @@
 import numpy as np
 from scipy.special import erf
 
+from cholla_api.analysis.ChollaCosmoGridCalculator import ChollaCosmoCalculator
+
+
 class ChollaSkewerCosmoCalculator:
     '''
     Cholla Skewer Calculator object
@@ -24,14 +27,16 @@ class ChollaSkewerCosmoCalculator:
         self.dx = dx
         self.dtype = dtype
 
+        self.snapHead = snapHead
+
         # number of line-of-sight cells including ghost cells
         self.n_los_ghost = self.n_los + 2 * self.n_ghost
 
-        self.cosmoCalc_ghost = ChollaCosmologyCalculator(self.snapHead, cosmoCalcHead)
+        self.cosmoCalc_ghost = ChollaCosmoCalculator(self.snapHead, cosmoHead)
 
         # calculate Hubble flow through one cell
         dvHubble = self.cosmoCalc_ghost.dvHubble(self.dx) # [km s-1]
-        self.dvHubble_cgs = dvHubble * self.dvHubble # [cm s-1]
+        self.dvHubble_cgs = dvHubble * self.cosmoCalc_ghost.cosmoHead.km_cgs # [cm s-1]
 
         # create Hubble flow arrays along left, right, and center of each cell
         # prepend and append ghost cells
@@ -41,8 +46,12 @@ class ChollaSkewerCosmoCalculator:
         # create Hubble flow array at center of each cell
         self.vHubbleCenter_ghost_cgs = (np.arange(-self.n_ghost, self.n_ghost + self.n_los) + 0.5) * self.dvHubble_cgs # [cm s-1]
 
+        # calculate & attach current Hubble rate in [km s-1 Mpc-1] and [s-1]
+        self.Hubble = self.cosmoCalc_ghost.Hubble()
+        self.Hubble_cgs = self.Hubble * self.cosmoCalc_ghost.cosmoHead.km_cgs / self.cosmoCalc_ghost.cosmoHead.Mpc_cgs # in cgs [s-1]
 
-     def extend_ghostcells(self, arr):
+
+    def extend_ghostcells(self, arr):
         '''
         Extend an array with ghost cels, enforcing periodic boundary conditions
         
@@ -114,7 +123,7 @@ class ChollaSkewerCosmoCalculator:
         # calculate Ly-alpha interaction cross section
         sigma_Lya = np.pi * hydroCalc.e * hydroCalc.e / hydroCalc.me # [cm3 g1 s-2 / g] = [cm3 s-2]
         sigma_Lya = sigma_Lya * hydroCalc.lambda_Lya / hydroCalc.c # [cm3 s-2 * cm / (cm s-1)] = [cm3 s-1]
-        sigma_Lya = sigma_Lya / self.cosmoCalc.H0_cgs # [cm3 s-1 / (s-1)] = [cm3]
+        sigma_Lya = sigma_Lya / self.Hubble_cgs # [cm3 s-1 / (s-1)] = [cm3]
         f_12 = 0.416 # oscillator strength
         sigma_Lya *= f_12
 
@@ -135,6 +144,9 @@ class ChollaSkewerCosmoCalculator:
             # [cm3 * # density] = [cm3 * cm-3] = []
             tau_ghost[losid] *= np.sum(nHI_phys_ghost_cgs * erf(y_R) - erf(y_R)) / 2.0
 
+        # clip edges
+        tau = tau_ghost[n_ghost:-n_ghost]
 
+        return tau
 
 
