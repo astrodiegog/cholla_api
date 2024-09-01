@@ -27,9 +27,18 @@ class ChollaHydroCalculator:
         self.dtype = dtype
         
         # cgs constant values
-        self.mp = 1.672622e-24
-        self.kB = 1.380658e-16
-    
+        # proton and electron masses
+        self.mp = 1.672622e-24 # [g]
+        self.me = 9.1093897e-28 # [g]
+        # Boltzmann constant
+        self.kB = 1.380658e-16 # [erg K-1] = [cm2 g s-2 K-1]
+        # electron charge
+        self.e = 4.8032068e-10 # [esu] = [cm3/2 g1/2 s-1]
+        # speed of light
+        self.c = 2.99792458e10 # [cm s-1]
+        # Ly-alpha wavelength
+        self.lambda_Lya = 1.21567e-5 # [cm]
+
     def create_arr(self):
         '''
         Create and return an empty array
