@@ -144,7 +144,7 @@ class ChollaCosmoCalculator:
         dx_h = dx / self.cosmoHead.h_cosmo
 
         dxh_cgs = dx_h * self.cosmoHead.kpc_cgs # h^-1 kpc * (#cm / kpc) =  h^-1 cm
-        dxh_Mpc = dx_cgs / self.cosmoHead.Mpc_cgs # h^-1 cm / (#cm / Mpc) = h^-1 Mpc
+        dxh_Mpc = dxh_cgs / self.cosmoHead.Mpc_cgs # h^-1 cm / (#cm / Mpc) = h^-1 Mpc
         
         # convert to physical length
         dxh_Mpc_phys = self.physical_length(dxh_Mpc)
