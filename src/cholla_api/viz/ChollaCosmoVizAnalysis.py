@@ -328,8 +328,7 @@ class ChollaCosmoVizAnalysis:
             gas_energy = box.get_hydrodata(box.gasenergy_str, dtype=self.precision)
 
             # calculate temperature
-            temp = boxhydrocalc.Calculator.gas_temp(gas_energy, density, gamma, 
-                                                    mu, code2cgs)
+            temp = boxhydrocalc.gas_temp(gas_energy, density, gamma, mu, code2cgs)
 
             # histogram
             l_Thist_box, _ = np.histogram(np.log10(temp.flatten()), bins=l_Thist_bins)
@@ -523,9 +522,9 @@ class ChollaCosmoVizAnalysis:
             l_nhist_box, _ = np.histogram(np.log10(density.flatten()), bins=l_nhist_bins)
 
             # calculate xyz projections
-            nx_box = boxhydrocalc.Calculator.densityk_projection(density, 0)
-            ny_box = boxhydrocalc.Calculator.densityk_projection(density, 1)
-            nz_box = boxhydrocalc.Calculator.densityk_projection(density, 2)
+            nx_box = boxhydrocalc.densityk_projection(density, 0)
+            ny_box = boxhydrocalc.densityk_projection(density, 1)
+            nz_box = boxhydrocalc.densityk_projection(density, 2)
 
             # grab offsets to place onto global array
             startX, startY, startZ = box.BoxHead.offset
@@ -591,7 +590,9 @@ class ChollaCosmoVizAnalysis:
         _ = ax_ny.tick_params(axis='both', which='both',
                                 left=False, top=True, bottom=False, right=True,
                                 color='white')
-
+        
+        # add background grid
+        _ = ax_hist.grid(which='both', axis='both', alpha=0.3)
 
         # set annotating text to label each projection
         rhox_str = r'$\rho_x$'
