@@ -89,16 +89,12 @@ class ChollaCosmologyHead:
         self.energy_cosmo2cgs = 1. / self.mom_cgs2cosmo
 
 
-class ChollaCosmoCalculator:
+class ChollaSnapCosmologyHead:
     '''
-    Cholla Cosmological Calculator object
-        Serves as a calculator where the calculated values have some expected
-            size and datatype (default is float). Assert that inputs are of same
-            shape as dims that was used to initialize this calculator. To
-            complete some analysis, this ChollaCalculator will be the mediator
-            that will act on the primitive saved values. Acts on a specific
-            snapshot to convert between physical and comoving units
-
+    Cholla Snapshot Cosmology header object
+        Serves as a header holding information that combines a ChollaCosmologyHead
+            with a specific scale factor with the snapshot header object.
+        
         Initialized with:
             snapHead (ChollaSnapHead): provides current redshift
             cosmoHead (ChollaCosmologyHead): provides helpful information of cosmology & units
@@ -106,8 +102,13 @@ class ChollaCosmoCalculator:
     Values are returned in code units unless otherwise specified.
     '''
     def __init__(self, snapHead, cosmoHead):
-        self.snapHead = snapHead
+        self.a = snapHead.a
         self.cosmoHead = cosmoHead
+
+        # calculate & attach current Hubble rate in [km s-1 Mpc-1] and [s-1]
+        self.Hubble_cosmo = self.Hubble()
+        self.Hubble_cgs = self.Hubble_cosmo * self.cosmoHead.km_cgs / self.cosmoHead.Mpc_cgs # in cgs [s-1]
+
 
     def Hubble(self):
         '''
@@ -119,11 +120,11 @@ class ChollaCosmoCalculator:
             H (float): Hubble parameter (km/s/Mpc)
         '''
 
-        a2 = self.snapHead.a * self.snapHead.a
-        a3 = a2 * self.snapHead.a
-        a4 = a3 * self.snapHead.a
-        DE_factor = (self.snapHead.a)**(-3. * (1. + self.cosmoHead.w0 + self.cosmoHead.wa))
-        DE_factor *= np.exp(-3. * self.cosmoHead.wa * (1. - self.snapHead.a))
+        a2 = self.a * self.a
+        a3 = a2 * self.a
+        a4 = a3 * self.a
+        DE_factor = (self.a)**(-3. * (1. + self.cosmoHead.w0 + self.cosmoHead.wa))
+        DE_factor *= np.exp(-3. * self.cosmoHead.wa * (1. - self.a))
 
         H0_factor = (self.cosmoHead.OmegaR / a4) + (self.cosmoHead.OmegaM / a3)
         H0_factor += (self.cosmoHead.OmegaK / a2) + (self.cosmoHead.OmegaL * DE_factor)
@@ -147,10 +148,42 @@ class ChollaCosmoCalculator:
         dxh_Mpc = dxh_cgs / self.cosmoHead.Mpc_cgs # h^-1 cm / (#cm / Mpc) = h^-1 Mpc
         
         # convert to physical length
-        dxh_Mpc_phys = self.physical_length(dxh_Mpc)
+        dxh_Mpc_phys = dxh_Mpc * self.a
 
         return self.Hubble() * dxh_Mpc_phys
 
+
+
+
+class ChollaCosmoCalculator:
+    '''
+    Cholla Cosmological Calculator object
+        Serves as a calculator for a cosmology at a specific scale factor.
+        
+        Initialized with:
+            snapCosmoHead (ChollaSnapCosmologyHead): provides current redshift
+            dims (tuple): size of data sets to act on
+            dtype (np type): (optional) numpy precision to initialize output arrays 
+
+    Values are returned in code units unless otherwise specified.
+    '''
+
+    def __init__(self, snapCosmoHead, dims, dtype=np.float32):
+        self.snapCosmoHead = snapCosmoHead
+        self.dims = dims
+        self.dtype = dtype    
+
+    def create_arr(self):
+        '''
+        Create and return an empty array
+        
+        Args:
+            ...
+        Returns:
+            (arr): array of initialized dimensions and datatype
+        '''
+
+        return np.zeros(self.dims, dtype=self.dtype)
 
     def physical_length(self, length_comov):
         '''
@@ -159,13 +192,16 @@ class ChollaCosmoCalculator:
         Args:
             length_comov (float): comoving length
         Returns:
-            length_phys (float): physical length
             arr (arr): array that will hold data
         '''
+        assert np.array_equal(length_comov.shape, self.dims)
 
-        length_phys = length_comov * self.snapHead.a
+        # initialize array with dims shape
+        arr = self.create_arr()
 
-        return length_comov
+        arr[:] = length_comov * self.snapCosmoHead.a
+
+        return arr
 
 
     def physical_density(self, density_comov):
@@ -175,12 +211,72 @@ class ChollaCosmoCalculator:
         Args:
             density_comov (float): comoving density
         Returns:
-            density_phys (float): physical density
+            arr (arr): array that will hold data
         '''
+        assert np.array_equal(density_comov.shape, self.dims)
+        
+        # initialize array with dims shape
+        arr = self.create_arr()
 
-        a3 = self.snapHead.a * self.snapHead.a * self.snapHead.a
-        density_phys = density_comov / a3
+        a3 = self.snapCosmoHead.a * self.snapCosmoHead.a * self.snapCosmoHead.a
+        arr[:] = density_comov / a3
 
-        return density_comov
+        return arr
+
+
+    def density_cosmo2cgs(self, density_cosmo):
+        '''
+        Convert the density saved in cosmological units of [h2 Msun kpc-3]
+            to cgs units of [g cm-3]. With the large orders of magnitude
+            involved, this calculation is completed in log-space
+
+        Args:
+            density_cosmo (float): density in cosmological units
+        Returns:
+            arr (arr): array that will hold data
+        '''
+        assert np.array_equal(density_cosmo.shape, self.dims)
+
+        # initialize array with dims shape
+        arr = self.create_arr()
+        
+        # calculate h^2
+        h_cosmo2 = self.snapCosmoHead.cosmoHead.h_cosmo * self.snapCosmoHead.cosmoHead.h_cosmo
+
+        # take log of constants
+        ln_hcosmo2 = np.log(h_cosmo2)
+        ln_Msun = np.log(self.snapCosmoHead.cosmoHead.Msun_cgs)
+        ln_kpc3 = np.log(self.snapCosmoHead.cosmoHead.kpc3_cgs)
+        
+        # take log of density
+        ln_density_cosmo = np.log(density_cosmo)
+        
+        # convert values to cgs
+        ln_density_cgs = ln_density_cosmo + ln_Msun + ln_hcosmo2 - ln_kpc3
+        
+        # take exp of log to get physical values
+        arr[:] = np.exp(ln_density_cgs) # [g cm-3]
+
+        return arr
+
+
+    def velocity_cosmo2cgs(self, velocity_cosmo):
+        '''
+        Convert the velocity saved in cosmology units of [km s-1] to the cgs
+            units of [cm s-1].
+
+        Args:
+            velocity_cosmo (float): velocity in cosmological units
+        Returns:
+            arr (arr): array that will hold data
+        '''
+        assert np.array_equal(velocity_cosmo.shape, self.dims)
+
+        # initialize array with dims shape
+        arr = self.create_arr()
+
+        arr[:] = velocity_cosmo * self.snapCosmoHead.cosmoHead.km_cgs # [cm s-1]
+
+        return arr
 
 
