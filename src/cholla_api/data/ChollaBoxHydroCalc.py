@@ -10,14 +10,14 @@ class ChollaBoxHydroCalc:
         This object ties the hydro calculator object to a box's dimensions
 
         Initialized with:
-        - ChollaBox (ChollaBox): ChollaBox object
+        - chBox (ChollaBox): ChollaBox object
         - chMacroFlags (ChollaMacroFlags): ChollaMacroFlags, holding macro
                 compiling information
         - dtype (datatype): (optional) precision to compute data
     '''
     
-    def __init__(self, ChollaBox, chMacroFlags, dtype=np.float32):
-        self.Box = ChollaBox
+    def __init__(self, chBox, chMacroFlags, dtype=np.float32):
+        self.Box = chBox
         self.DE_flag = chMacroFlags.DualEnergy
         self.Calculator = ChollaHydroCalculator(self.Box.BoxHead.local_dims, dtype=dtype)
 
