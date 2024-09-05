@@ -160,8 +160,10 @@ The same discussion on units from hydro also applies to the particles such that 
 
 ### Gravity Files
 
-???
 
+From line 142 in ``src/grav/grav3D.h``
+Device Array containing the gravitational potential of each cell
+     * in the grid
 
 
 ## Analysis

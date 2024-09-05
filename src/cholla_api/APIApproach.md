@@ -56,6 +56,30 @@ class ChollaBoxHead:
 
 This object holds the information that connects a process to the global volume.
 
+The last simulation-specific data structure is created to understand what compiler flags were used in making the Cholla executable
+
+```bash
+class ChollaMacroFlags:
+    '''
+    Cholla Macro Flags object
+        Holds information related to the compiler flags used for a Cholla
+            executable. 
+        Initialized with:
+        - DualEnergy (bool): whether Gas Internal Energy saved with Dual Energy
+            Formalism
+        - Gravity (bool): whether gravity was solved on GPU
+        - Particles (bool): whether particles were used & tracked on GPU
+        - Cosmology (bool): whether equations of moation was solved in 
+            comoving frame
+        - Cooling_GRACKLE (bool): whether GRACKLE was used for cooling & chemistry
+        - Cooling_GPU (bool): whether cooling & chemistry solved onn GPU
+        - OTF_Analysis (bool): whether on-the-fly cosmological analysis was 
+            performed
+    '''
+```
+
+This object holding the macro flags helps in understanding what data was actually saved.
+
 That's really cool, but it's all abstract. What if I just want to grab the data held within some file? Well to do that, we tie this header information along with the path to a snapshot to create the ``ChollaBox`` class
 
 ```bash
@@ -66,8 +90,10 @@ class ChollaBox:
 
         Initialized with:
             SnapPath (str): path to a snapshot
-            ChollaBoxHead (ChollaBoxHead): Cholla Box Head object connecting
-                box to rest of volume
+            chBoxHead (ChollaBoxHead): Cholla Box Head object connecting box to 
+                rest of volume
+            chMacroFlags (ChollaMacroFlags): ChollaMacroFlags, holding macro
+                compiling information
     '''
 ```
 
@@ -120,9 +146,7 @@ class ChollaGlobal:
         Holds information related to an entire simulation run. Initialized with
         - basePath (str): the directory the simulation is held in
         - chGrid (ChollaGrid): ChollaGrid object, holding domain information
-        - gravity_flag (bool): whether gravity data was saved
-        - particles_flag (bool): whether particle data was saved
-        - cosmo_flag (bool): (optional) whether cosmology type was used
+        - chMacroFlags (ChollaMacroFlags): ChollaMacroFlags, holding macro compiling information
         - data_subdir (str): (optional) where data is placed within basePath
     '''
 ```
@@ -160,7 +184,7 @@ class ChollaHydroCalculator:
     '''
 ```
 
-For a higher-order level of abstraction, we can tie a ``ChollaHydroCalculator`` to a ``ChollaBox`` to define the calculation of hydro values specific to a dataset
+For a higher-order level of abstraction, we can tie a ``ChollaHydroCalculator`` to a ``ChollaBox`` and ``ChollaMacroFlags`` to define the calculation of hydro values specific to a dataset
 
 
 ```bash
@@ -171,8 +195,10 @@ class ChollaBoxHydroCalc:
         This object ties the hydro calculator object to a box's dimensions
 
         Initialized with:
-        - ChollaBox (ChollaBox): ChollaBox object
-        - dtype (datatype): precision to compute data
+        - chBox (ChollaBox): ChollaBox object
+        - chMacroFlags (ChollaMacroFlags): ChollaMacroFlags, holding macro
+                compiling information
+        - dtype (datatype): (optional) precision to compute data
     '''
 ``` 
 
@@ -187,8 +213,10 @@ class ChollaSnapHydroCalc:
         This object ties the hydro calculator object to a box's dimensions
 
         Initialized with:
-        - ChollaSnap (ChollaSnap): ChollaSnap object
-        - ChollaGrid (ChollaGrid): ChollaGrid object
+        - chSnap (ChollaSnap): ChollaSnap object
+        - chGrid (ChollaGrid): ChollaGrid object
+        - chMacroFlags (ChollaMacroFlags): ChollaMacroFlags, holding macro
+                compiling information
         - dtype (datatype): (optional) precision to calculate data
         - calc_box (bool): (optional) whether to use ChollaBoxHydroCalculator object
 
@@ -200,17 +228,16 @@ class ChollaSnapHydroCalc:
     '''
 ``` 
 
-To save some helpful units at cosmological scales, as well as help in converting between proper and comoving coordinates, we have created a cosmological calculator
+To save some helpful units at cosmological scales, we have created a cosmology header
 
 ```bash
-class ChollaCosmoGridCalculator:
+class ChollaCosmologyHead:
     '''
-    Cholla Cosmology Grid Calculator object
-        Serves as a calculator for cosmology-related values given a discretized
-            ChollaGrid object. 
+    Cholla Cosmology Head
+        Serves as a header object that holds information that helps define a
+            specific cosmology
         
         Initialized with:
-        - ChollaGrid (ChollaGrid): ChollaGrid object
         - OmegaM (float): present-day energy density parameter for matter
         - OmegaR (float): present-day energy density parameter for radiation
         - OmegaK (float): present-day energy density parameter for spatial curvature
@@ -219,10 +246,44 @@ class ChollaCosmoGridCalculator:
         - wa (float): linear term in dark energy equation of state
         - H0 (float): present-day Hubble parameter in units of [km / s / Mpc]
 
+    '''
+```
+
+To describe cosmological information at a specific scale factor, we have created the ``ChollaSnapCosmologyHead`` header object
+
+```bash
+class ChollaSnapCosmologyHead:
+    '''
+    Cholla Snapshot Cosmology header object
+        Serves as a header holding information that combines a ChollaCosmologyHead
+            with a specific scale factor with the snapshot header object.
+        
+        Initialized with:
+            snapHead (ChollaSnapHead): provides current redshift
+            cosmoHead (ChollaCosmologyHead): provides helpful information of cosmology & units
+
     Values are returned in code units unless otherwise specified.
     '''
 ```
 
+Given the cosmology information at a specific scale factor, we can construct a cosmology calculator
+
+```bash
+class ChollaCosmoCalculator:
+    '''
+    Cholla Cosmological Calculator object
+        Serves as a calculator for a cosmology at a specific scale factor.
+        
+        Initialized with:
+            snapCosmoHead (ChollaSnapCosmologyHead): provides current redshift
+            dims (tuple): size of data sets to act on
+            dtype (np type): (optional) numpy precision to initialize output arrays 
+
+    Values are returned in code units unless otherwise specified.
+    '''
+```
+
+This object can convert between cosmological units and cgs units, as well as from physical and proper values.
 
 This document has described some low-level API to interact with snapshot files. However, Cholla can also output 2 other data files: analysis and skewers !
 
@@ -324,8 +385,101 @@ class ChollaOnTheFlySkewers:
     '''
 ```
 
+We have also started to create skewer information that is independent of the On-The-Fly analysis, in the case we want skewers but did not turn on that compiler flags.
+
+To describe a skewer with respect to the entire/global simulation volume, we can instantiate that with information regarding what box the skewer lands on, as well as the local skewer id. To describe a local skewer within a face, we have the following object
+
+```bash
+class ChollaSkewerLocalFaceHead:
+    '''
+    Cholla Skewer Local Face Head
+
+    Holds information regarding a local skewer within face
+
+        Initialized with:
+        - localface_id (int): id of the local skewer on face
+        - localface_joffset (int): offset along j-axis
+        - localface_koffset (int): offset along k-axis
+    '''
+```
+
+while a face is described as
+
+```bash
+class ChollaSkewerFaceHead:
+    '''
+    Cholla Skewer Face Head
+
+    Holds information regarding a local skewer face
+
+        Initialized with:
+        - face_id (int): id of the face
+        - face_joffset (int): offset along j-axis
+        - face_koffset (int): offset along k-axis
+    '''
+
+```
+
+such that we can finally describe an individual skewer with the object
+
+```bash
+class ChollaSkewerGlobalHead:
+    '''
+    Cholla Skewer Global Head
+
+    Holds information regarding a global skewer
+
+        Initialized with:
+        - global_id (int): id of the global skewer
+        - chFaceHead (ChollaSkewerFaceHead): ChollaSkewerFaceHead object,
+            holds info on face within grid
+        - chFaceLocalHead (ChollaSkewerLocalFaceHead): ChollaSkewerLocalFaceHead
+            object, holds info on skewer within face
+        - n_los (int): number of cells along line-of-sight
+        - nlos_proc (int): number of processes along line-of-sight
+    '''
+```
+
+With this header object that describes a skewer in the global simulation volume, we can grab the two $(j,k)$ dimension offsets to describe where the skewer lies on the global simulation, as well as how far the skewer goes in. 
+
+An actual implementation requires simply the path to the snapshots, the ``ChollaSkewerGlobalHead`` for a skewer as well as the simulation grid ``ChollaGrid`` that the skewer lives in. Along the x-direction, a global skewer can be implemented as
+
+```bash
+class ChollaSkewerxGlobal:
+    '''
+    Cholla Skewer x Global object
+        Holds information regarding skewer along x direction including methods
+            to grab data along skewer
+
+        Initialized with:
+        - ChollaSkewerGlobalHead (ChollaSkewerGlobalHead): global head object
+        - SnapPath (str): path to snapshot directory
+        - ChollaGrid (ChollaGrid): grid object
+    '''
+```
 
 To describe the outputs of an analysis file, we have created 2 classes for each of the subgroups in an analysis file. Firstly, to describe the power spectrum, we have a ``ChollaOnTheFlyPowerSpectrumHead`` class initialized with all the information regarding a power spectrum.
+
+Whether using the On-The-Fly skewers or the post-simulation skewers, we have an implementation of a skewer cosmological calculator that can compute the optical depth along a skewer. This calculator combines the scale factor from a snapshot, the cosmological framework the simulation lives in, the line-of-sight cells, and the distance between cells to fully describe the necessary ingredients to compute the optical depth.
+
+```bash
+class ChollaSkewerCosmoCalculator:
+    '''
+    Cholla Skewer Calculator object
+        Serves as a specific implementaiton of a Cholla Cosmological Calculator
+            for a skewer.
+
+        Initialized with:
+            snapHead (ChollaSnapHead): provides current redshift
+            cosmoHead (ChollaCosmologyHead): provides helpful information of cosmology & units
+            n_los (int): number of cells along line-of-sight
+            dx (float): comoving distance between cells (kpc)
+            dtype (np type): (optional) numpy precision to initialize output arrays
+        
+        Objects including ghost cells are suffixed with _ghost
+
+    Values are returned in code units unless otherwise specified.
+```
 
 
 ```bash
@@ -345,6 +499,50 @@ class ChollaOnTheFlyPowerSpectrumHead:
     '''
 
 ``` 
+
+The abstract description and implementation of a singular skewer is well described, but an entire skewer analysis ties many skewers together. Given the information about cells between skewers, as well as the line-of-sight and the two other dimension number of cells and processes, we can fully describe a skewer analysis object
+
+```bash
+class ChollaSkewerAnalysisHead:
+    '''
+    Cholla Skewer Analysis Head
+
+    Holds information regarding a skewer analysis
+
+        Initialized with:
+        - n_stride (int): stride cell number between skewers
+        - nlos_global (int): number of line-of-sight global cells
+        - nj_global (int): number of global cells along j-dimension
+        - nk_global (int): number of global cells along k-dimension
+        - nlos_proc (int): number of processes along line-of-sight
+        - nj_proc (int): number of processes along j-dimension
+        - nk_proc (int): number of processes along k-dimension
+    '''
+```
+
+With this information, we just need to provide the global id of a skewer, and we can return the ``ChollaSkewerGlobalHead`` of a skewer, which (when tied to a snapshot path and grid) allows us to grab its data.
+
+This is precisely what is done along the x-y-z directions.
+
+```bash
+class ChollaSkewerxAnalysis:
+    '''
+    Cholla Skewer x Analysis object
+        Holds information regarding skewer analysis along x direction including
+            methods to grab ChollaSkewerxGlobal objects
+
+        Initialized with:
+        - n_stride (int): stride cell number between skewers
+        - SnapPath (str): path to snapshot directory
+        - chGrid (ChollaGrid): grid object
+        - chMacroFlags (ChollaMacroFlags): ChollaMacroFlags, holding macro
+                compiling information
+    '''
+```
+
+After creating a ``ChollaSkewerxAnalysis`` object, you can pass through the global id of a skewer to its ``get_skewer`` method, which returns a ``ChollaSkewerxGlobal`` object. This object has enough information to go into the snapshot files and grab the relevant data for it. This can be used to implement skewer analysis post-simulation.
+
+
 
 An implementation of a power spectrum is that tied to a specific file is specified with a ``ChollaOnTheFlyPowerSpectrum`` class
 
