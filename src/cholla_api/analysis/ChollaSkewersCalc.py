@@ -2,7 +2,7 @@ import numpy as np
 from scipy.special import erf
 
 from cholla_api.analysis.ChollaHydroCalculator import ChollaHydroCalculator
-from cholla_api.analysis.ChollaCosmoGridCalculator import ChollaSnapCosmologyHead, ChollaCosmoCalculator
+from cholla_api.analysis.ChollaCosmoCalculator import ChollaSnapCosmologyHead, ChollaCosmoCalculator
 
 
 class ChollaSkewerCosmoCalculator:
