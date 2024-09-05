@@ -27,8 +27,8 @@ class ChollaSnapHydroCalc:
     '''
     
     def __init__(self, chSnap, chGrid, chMacroFlags, dtype=np.float32, calc_box=True):
-        self.Snap = ChollaSnap
-        self.Grid = ChollaGrid
+        self.Snap = chSnap
+        self.Grid = chGrid
         self.Calculator = ChollaHydroCalculator((self.Grid.nx_global, self.Grid.ny_global, 
                                                  self.Grid.nz_global), 
                                                 dtype=dtype)
@@ -107,7 +107,7 @@ class ChollaSnapHydroCalc:
 
             return self.Calculator.int_energy(self.Snap.get_hydrodata(self.Grid, self.MacroFlags,
                                                                       energy_str, self.Calculator.dtype),
-                                              self.Snap.get_hydrodata(self.Grid, self.MacroFlags
+                                              self.Snap.get_hydrodata(self.Grid, self.MacroFlags,
                                                                       density_str, self.Calculator.dtype),
                                               self.Snap.get_hydrodata(self.Grid, self.MacroFlags,
                                                                       momx_str, self.Calculator.dtype),
