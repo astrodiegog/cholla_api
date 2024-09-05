@@ -38,7 +38,7 @@ class ChollaSnapHydroCalc:
             from cholla_api.data.ChollaBoxHydroCalc import ChollaBoxHydroCalc
             # grab key strings from boxhead 0
             boxhead0 = self.Grid.get_BoxHead(0)
-            box0 = ChollaBox(self.Snap.SnapPath, boxhead0)
+            box0 = ChollaBox(self.Snap.SnapPath, boxhead0, self.MacroFlags)
 
     def get_vmag(self):
         '''
