@@ -5,6 +5,8 @@ from cholla_api.run.ChollaMacroFlags import ChollaMacroFlags
 from cholla_api.snap.ChollaSnap import ChollaSnapHead
 from cholla_api.snap.ChollaSnap import ChollaSnap
 from cholla_api.data.ChollaBox import ChollaBox
+from cholla_api.OTFanalysis.ChollaOnTheFlyAnalysis import ChollaOnTheFlyAnalysis
+from cholla_api.OTFanalysis.ChollaOnTheFlySkewers import ChollaOnTheFlySkewers
 
 
 class ChollaGlobal:
@@ -17,10 +19,13 @@ class ChollaGlobal:
         - data_subdir (str): (optional) where data is placed within basePath
     '''
 
-    def __init__(self, basePath,  chGrid, chMacroFlags, data_subdir = '/data'):
+    def __init__(self, basePath,  chGrid, chMacroFlags, data_subdir = '/data', analysis_subdir = '/analysis', skewers_subdir = '/skewers'):
         self.dataPath = basePath + data_subdir
         self.grid = chGrid
         self.macroFlags = chMacroFlags
+        if self.macroFlags.OTF_Analysis:
+            self.analysisPath = basePath + analysis_subdir
+            self.skewersPath = basePath + skewers_subdir
 
 
     def test_domaindecomp(self, nSnap=1):
@@ -55,6 +60,53 @@ class ChollaGlobal:
                 return False
 
         return True
+
+    def get_cosmoHeader(self, nAnalysisOutput=0):
+        '''
+        Given an analysis output number, create the ChollaOnTheFlyAnalysis
+            object to return the Cosmology Header object
+
+        Args:
+            nAnalysisOutput (int): (optional) analysis output
+        Returns:
+            (ChollaCosmologyHead): cosmology header object
+        '''
+        OTFAnalysis = self.get_OTFAnalysis(nAnalysisOutput)
+
+        return OTFAnalysis.get_cosmoHeader()
+
+
+    def get_OTFAnalysis(self, nAnalysisOutput):
+        '''
+        Given an analysis output number, return the ChollaOnTheFlyAnalysis
+            object associated with the analysis subdirectory in initialization
+
+        Args:
+            nAnalysisOutput (int): analysis output
+        Returns:
+            (ChollaOnTheFlyAnalysis): OTF Analysis object
+        '''
+
+        assert self.macroFlags.OTF_Analysis
+
+        return ChollaOnTheFlyAnalysis(nAnalysisOutput, self.analysisPath, self.grid)
+
+
+    def get_OTFSkewers(self, nSkewersOutput):
+        '''
+        Given a skewer output number, return the ChollaOnTheFlySkewers
+            object associated with the skewer subdirectory in initialization
+
+        Args:
+            nSkewersOutput (int): skewer output
+        Returns:
+            (ChollaOnTheFlySkewers): OTF Skewers object
+        '''
+
+        assert self.macroFlags.OTF_Analysis
+
+        return ChollaOnTheFlySkewers(nSkewersOutput, self.skewersPath, self.grid)
+
 
     def get_snapbox(self, nSnap, nBox):
         '''
