@@ -70,6 +70,37 @@ class ChollaOnTheFlyPhaseSpaceHead:
         self.n_temp = n_temp
 
 
+    def get_bin_l10Delta(self):
+        '''
+        Calculate the histogram bins for the log10 Delta axis
+        
+        Args:
+            ...
+        Return:
+            (arr): array providing histogram bin limits
+        '''
+        # calculate the log10 of each axis min and max
+        l10_densmin = np.log10(self.density_min)
+        l10_densmax = np.log10(self.density_max)
+
+        # the log10(Delta) histogram bins used for phase space
+        return np.linspace(l10_densmin, l10_densmax, self.n_density)
+    
+    def get_bin_l10Temp(self):
+        '''
+        Calculate the histogram bins for the log10 temperature axis
+
+        Args:
+            ...
+        Return:
+            (arr): array providing histogram bin limits
+        '''
+        l10_tempmin = np.log10(self.T_min)
+        l10_tempmax = np.log10(self.T_max)
+
+        # the log10(temp) histogram bins used for phase space
+        return np.linspace(l10_tempmin, l10_tempmax, self.n_temp)
+
 
 
 class ChollaOnTheFlyPowerSpectrum:
@@ -201,7 +232,63 @@ class ChollaOnTheFlyPhaseSpace:
         fObj.close()
 
         return arr
-    
+
+    def approx_log10T0(self, dtype=np.float32):
+        '''
+        Approximate T0 - the temperature at mean cosmic density - using the
+            phase space distribution. Will use the cold, low-dense region
+            of -0.25 < log10_Delta < 0.25 & 3 < log10_T < 4 to find the
+            average log10_T, and assign as log10_T0.
+
+        Args:
+            dtype (np type): (optional) numpy precision to use
+        Returns:
+            exp_lT0 (float): log base-10 of the temperature at mean cosmic density
+        '''
+        
+        # the log10(Delta) and log10(Temp) histogram bins used for phase space
+        phase_l10_dens_bins = self.OTFPhaseSpaceHead.get_bin_l10Delta()
+        phase_l10_temp_bins = self.OTFPhaseSpaceHead.get_bin_l10Temp()
+        
+        # get near cosmic mean density mask
+        l10_cosmicmean_min, l10_cosmicmean_max = -0.25, 0.25
+        cosmicmean_1Dmask = (phase_l10_dens_bins > l10_cosmicmean_min) & (phase_l10_dens_bins < l10_cosmicmean_max)
+
+        # get cold gas mask
+        l10_cold_min, l10_cold_max = 3., 5.
+        cold_1Dmask = (phase_l10_temp_bins > l10_cold_min) & (phase_l10_temp_bins < l10_cold_max)
+
+        # redefine temp lims to be in terms of the temp histogram bin limits
+        l10_cold_min = phase_l10_temp_bins[cold_1Dmask][0]
+        l10_cold_max = phase_l10_temp_bins[cold_1Dmask][-1]
+        
+        # calculate bin inside the temp region
+        n_coldbins = np.sum(cold_1Dmask)
+        n_cosmicmeanbins = np.sum(cosmicmean_1Dmask)
+        cold_l10_temp_bins = np.linspace(l10_cold_min, l10_cold_max, int(n_coldbins + 1))
+        
+        # calculate center of bins
+        cold_l10_temp_centers = (cold_l10_temp_bins[1:] + cold_l10_temp_bins[:-1]) / 2.
+
+        # transform each 1D mask to a 2D mask
+        cosmicmean_2Dmask = np.repeat(cosmicmean_1Dmask, self.OTFPhaseSpaceHead.n_temp).reshape((self.OTFPhaseSpaceHead.n_density, self.OTFPhaseSpaceHead.n_temp)).T
+        cold_2Dmask = np.repeat(cold_1Dmask, self.OTFPhaseSpaceHead.n_density).reshape((self.OTFPhaseSpaceHead.n_density, self.OTFPhaseSpaceHead.n_temp))
+
+        # combine the 2D masks & apply to phase space
+        combo_2Dmask = (cosmicmean_2Dmask) & (cold_2Dmask)
+        newphasespace = self.get_phasespace(dtype)[combo_2Dmask].reshape((n_coldbins, n_cosmicmeanbins))
+
+        # sum along Delta axis & normalize to PDF
+        # this is the probability density function of a cell in the cold, 
+        # near-cosmic mean to be within a cold_l10_temp_bins bin
+        pdf_log10T = np.sum(newphasespace, axis=1) / np.sum(newphasespace)
+
+        # expectation value is calculated by scaling the probability of each
+        # temperature bin by its pdf value & summing
+        exp_lT0 = np.sum(pdf_log10T * cold_l10_temp_centers)
+        
+        return exp_lT0
+
 
 class ChollaOnTheFlyAnalysis:
     '''
@@ -277,6 +364,21 @@ class ChollaOnTheFlyAnalysis:
         self.current_z = fObj.attrs['current_z'].item()
 
         fObj.close()
+
+    def get_cosmoHeader(self):
+        '''
+        Create and return a ChollaCosmologyHead object
+        
+        Args:
+            ...
+        Returns:
+            (ChollaCosmologyHead): cosmology header object
+        '''
+
+        from cholla_api.analysis.ChollaCosmoGridCalculator import ChollaCosmologyHead
+
+        return ChollaCosmologyHead(self.Omega_M, self.Omega_R, self.Omega_K,
+                                   self.Omega_L, self.w0, self.wa, self.H0)
 
 
     def get_currH(self):
