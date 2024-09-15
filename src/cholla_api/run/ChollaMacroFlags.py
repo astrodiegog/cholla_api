@@ -15,7 +15,7 @@ class ChollaMacroFlags:
         - OTF_Analysis (bool): whether on-the-fly cosmological analysis was 
             performed
     '''
-    def __init__(self, DualEnergy, Gravity, Particles, Cosmology, Cooling_GRACKLE, Cooling_GPU, OTF_Analysis):
+    def __init__(self, DualEnergy, Gravity, Particles, Cosmology, Cooling_GRACKLE, Cooling_GPU, OTF_Analysis, OTF_Skewers):
         self.hydro = True
         self.DualEnergy = DualEnergy
         self.Gravity = Gravity # assume solved on GPU
@@ -24,6 +24,7 @@ class ChollaMacroFlags:
         self.Cooling_GRACKLE = Cooling_GRACKLE
         self.Cooling_GPU = Cooling_GPU
         self.OTF_Analysis = OTF_Analysis
+        self.OutputSkewers = OTF_Skewers
         if self.Cooling_GRACKLE and self.Cooling_GPU:
             print("--- Error (!) Cooling + Chemistry can only be solved on GPU ~OR~ GRACKLE. ---")
 

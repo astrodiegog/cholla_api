@@ -25,6 +25,7 @@ class ChollaGlobal:
         self.macroFlags = chMacroFlags
         if self.macroFlags.OTF_Analysis:
             self.analysisPath = basePath + analysis_subdir
+        if self.macroFlags.OutputSkewers:
             self.skewersPath = basePath + skewers_subdir
 
 
@@ -104,6 +105,7 @@ class ChollaGlobal:
         '''
 
         assert self.macroFlags.OTF_Analysis
+        assert self.macroFlags.OutputSkewers
 
         return ChollaOnTheFlySkewers(nSkewersOutput, self.skewersPath, self.grid)
 

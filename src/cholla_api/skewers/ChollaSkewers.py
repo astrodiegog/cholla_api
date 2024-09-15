@@ -92,14 +92,17 @@ class ChollaSkewerxGlobal:
             to grab data along skewer
 
         Initialized with:
-        - ChollaSkewerGlobalHead (ChollaSkewerGlobalHead): global head object
+        - chSkewerGlobalHead (ChollaSkewerGlobalHead): global head object
         - SnapPath (str): path to snapshot directory
-        - ChollaGrid (ChollaGrid): grid object
+        - chGrid (ChollaGrid): grid object
+        - chMacroFlags (ChollaMacroFlags): ChollaMacroFlags, holding macro
+                compiling information
     '''
 
-    def __init__(self, ChollaSkewerGlobalHead, SnapPath, ChollaGrid):
-        self.skewGlobalHead = ChollaSkewerGlobalHead
+    def __init__(self, chSkewerGlobalHead, SnapPath, chGrid, chMacroFlags):
+        self.skewGlobalHead = chSkewerGlobalHead
         self.SnapPath = SnapPath
+        self.MacroFlags = chMacroFlags
 
         self.nx_local = int(self.skewGlobalHead.n_los / self.skewGlobalHead.nlos_proc)
 
@@ -113,7 +116,7 @@ class ChollaSkewerxGlobal:
         for curr_nlosproc in range(self.skewGlobalHead.nlos_proc):
             # starting x coordinate for skewer within current LOS process
             xstart = int(self.nx_local * curr_nlosproc)
-            boxhead = ChollaGrid.get_BoxHead_ijk(xstart, j, k)
+            boxhead = chGrid.get_BoxHead_ijk(xstart, j, k)
             boxheads[curr_nlosproc] = boxhead
         
         self.boxheads = tuple(boxheads)
@@ -135,7 +138,7 @@ class ChollaSkewerxGlobal:
         k_local = self.skewGlobalHead.skewLocalFaceHead.localface_koffset
 
         for boxhead in self.boxheads:
-            box = ChollaBox(self.SnapPath, boxhead)
+            box = ChollaBox(self.SnapPath, boxhead, self.MacroFlags)
 
             # check key with boxhead having 0 x-offset
             if (boxhead.offset[0] == 0):
@@ -159,14 +162,17 @@ class ChollaSkeweryGlobal:
             implementation, see src/analysis/lya_statistics.cpp Line 1264
 
         Initialized with:
-        - ChollaSkewerGlobalHead (ChollaSkewerGlobalHead): global head object
+        - chSkewerGlobalHead (ChollaSkewerGlobalHead): global head object
         - SnapPath (str): path to snapshot directory
-        - ChollaGrid (ChollaGrid): grid object
+        - chGrid (ChollaGrid): grid object
+        - chMacroFlags (ChollaMacroFlags): ChollaMacroFlags, holding macro
+                compiling information
     '''
 
-    def __init__(self, ChollaSkewerGlobalHead, SnapPath, ChollaGrid):
-        self.skewGlobalHead = ChollaSkewerGlobalHead
+    def __init__(self, chSkewerGlobalHead, SnapPath, chGrid, chMacroFlags):
+        self.skewGlobalHead = chSkewerGlobalHead
         self.SnapPath = SnapPath
+        self.MacroFlags = chMacroFlags
 
         self.ny_local = int(self.skewGlobalHead.n_los / self.skewGlobalHead.nlos_proc)
 
@@ -180,7 +186,7 @@ class ChollaSkeweryGlobal:
         for curr_nlosproc in range(self.skewGlobalHead.nlos_proc):
             # starting x coordinate for skewer within current LOS process
             ystart = int(self.ny_local * curr_nlosproc)
-            boxhead = ChollaGrid.get_BoxHead_ijk(j, ystart, k)
+            boxhead = chGrid.get_BoxHead_ijk(j, ystart, k)
             boxheads[curr_nlosproc] = boxhead
 
         self.boxheads = tuple(boxheads)
@@ -202,7 +208,7 @@ class ChollaSkeweryGlobal:
         k_local = self.skewGlobalHead.skewLocalFaceHead.localface_koffset
 
         for boxhead in self.boxheads:
-            box = ChollaBox(self.SnapPath, boxhead)
+            box = ChollaBox(self.SnapPath, boxhead, self.MacroFlags)
 
             # check key with boxhead having 0 y-offset
             if (boxhead.offset[1] == 0):
@@ -223,14 +229,17 @@ class ChollaSkewerzGlobal:
             to grab data along skewer.
 
         Initialized with:
-        - ChollaSkewerGlobalHead (ChollaSkewerGlobalHead): global head object
+        - chSkewerGlobalHead (ChollaSkewerGlobalHead): global head object
         - SnapPath (str): path to snapshot directory
-        - ChollaGrid (ChollaGrid): grid object
+        - chGrid (ChollaGrid): grid object
+        - chMacroFlags (ChollaMacroFlags): ChollaMacroFlags, holding macro
+                compiling information
     '''
 
-    def __init__(self, ChollaSkewerGlobalHead, SnapPath, ChollaGrid):
-        self.skewGlobalHead = ChollaSkewerGlobalHead
+    def __init__(self, chSkewerGlobalHead, SnapPath, chGrid, chMacroFlags):
+        self.skewGlobalHead = chSkewerGlobalHead
         self.SnapPath = SnapPath
+        self.MacroFlags = chMacroFlags
 
         self.nz_local = int(self.skewGlobalHead.n_los / self.skewGlobalHead.nlos_proc)
 
@@ -244,7 +253,7 @@ class ChollaSkewerzGlobal:
         for curr_nlosproc in range(self.skewGlobalHead.nlos_proc):
             # starting x coordinate for skewer within current LOS process
             zstart = int(self.nz_local * curr_nlosproc)
-            boxhead = ChollaGrid.get_BoxHead_ijk(j, k, zstart)
+            boxhead = chGrid.get_BoxHead_ijk(j, k, zstart)
             boxheads[curr_nlosproc] = boxhead
 
         self.boxheads = tuple(boxheads)
@@ -266,7 +275,7 @@ class ChollaSkewerzGlobal:
         k_local = self.skewGlobalHead.skewLocalFaceHead.localface_koffset
 
         for boxhead in self.boxheads:
-            box = ChollaBox(self.SnapPath, boxhead)
+            box = ChollaBox(self.SnapPath, boxhead, self.MacroFlags)
 
             # check key with boxhead having 0 y-offset
             if (boxhead.offset[2] == 0):
