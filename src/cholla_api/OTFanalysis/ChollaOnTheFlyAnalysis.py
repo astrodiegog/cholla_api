@@ -145,6 +145,48 @@ class ChollaOnTheFlyPowerSpectrum:
 
         return kcenters 
 
+    def get_kvals_edges(self, dtype=np.float32):
+        '''
+        Return the k-edges of the power spectrum
+
+        Args:
+            dtype (np type): (optional) numpy precision to use
+        Returns:
+            kedges (arr): k mode edges array
+        '''
+
+        kedges = np.zeros(self.OTFPowerSpectrumHead.n_bins, dtype=dtype)
+        iter_arr = np.arange(self.OTFPowerSpectrumHead.n_bins + 1, dtype=dtype)
+
+        # calculation can be completed in-line, but not as easy to read
+        l_kstart = self.OTFPowerSpectrumHead.l_kstart
+        dlogk = self.OTFPowerSpectrumHead.dlogk
+
+        kedges[:] = 10**(l_kstart + (dlogk * iter_arr) )
+
+        return kedges
+
+    def get_kvals_fft(self, dtype=np.float32):
+        '''
+        Return k-modes from the Fourier Transform
+
+        Args:
+            dtype (np type): (optional) numpy precision to use
+        Returns:
+            kcenters_fft (arr): k mode centers array
+        '''
+
+        kcenters_fft = np.zeros(self.OTFPowerSpectrumHead.n_bins, dtype=dtype)
+        iter_arr = np.arange(self.OTFPowerSpectrumHead.n_fft, dtype=dtype)
+
+        # calculation can be completed in-line, but not as easy to read
+        dvHubble = self.OTFPowerSpectrumHead.dvHubble
+        n_los = self.OTFPowerSpectrumHead.n_los
+
+        kcenters_fft[:] = 2 * np.pi * iter_arr / (n_los * dvHubble)
+
+        return kcenters_fft
+
     def get_powerspectrum(self, dtype=np.float32):
         '''
         Return the power spectrum
