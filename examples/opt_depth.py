@@ -4,7 +4,7 @@ from time import time
 
 from cholla_api.run.ChollaGrid import ChollaGrid
 from cholla_api.OTFanalysis.ChollaOnTheFlyAnalysis import ChollaOnTheFlyAnalysis
-from cholla_api.analysis.ChollaCosmoGridCalculator import ChollaCosmologyHead
+from cholla_api.analysis.ChollaCosmoCalculator import ChollaCosmologyHead
 from cholla_api.analysis.ChollaSkewersCalc import ChollaSkewerCosmoCalculator
 from cholla_api.snap.ChollaSnap import ChollaSnapHead
 from cholla_api.OTFanalysis.ChollaOnTheFlySkewers import ChollaOnTheFlySkewers
