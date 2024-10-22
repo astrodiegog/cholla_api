@@ -155,7 +155,7 @@ class ChollaOnTheFlyPowerSpectrum:
             kedges (arr): k mode edges array
         '''
 
-        kedges = np.zeros(self.OTFPowerSpectrumHead.n_bins, dtype=dtype)
+        kedges = np.zeros(self.OTFPowerSpectrumHead.n_bins + 1, dtype=dtype)
         iter_arr = np.arange(self.OTFPowerSpectrumHead.n_bins + 1, dtype=dtype)
 
         # calculation can be completed in-line, but not as easy to read
@@ -176,7 +176,7 @@ class ChollaOnTheFlyPowerSpectrum:
             kcenters_fft (arr): k mode centers array
         '''
 
-        kcenters_fft = np.zeros(self.OTFPowerSpectrumHead.n_bins, dtype=dtype)
+        kcenters_fft = np.zeros(self.OTFPowerSpectrumHead.n_fft, dtype=dtype)
         iter_arr = np.arange(self.OTFPowerSpectrumHead.n_fft, dtype=dtype)
 
         # calculation can be completed in-line, but not as easy to read
@@ -186,6 +186,44 @@ class ChollaOnTheFlyPowerSpectrum:
         kcenters_fft[:] = 2 * np.pi * iter_arr / (n_los * dvHubble)
 
         return kcenters_fft
+
+    def get_fft_binids(self, dtype_bin=np.int64, dtype_calc=np.float32, useforloop=True):
+        '''
+        Return the indices that the k-mode fft bins land on within kvals_edges
+
+        Args:
+            dtype_bin (np type): (optional) numpy precision to use for returned array
+            dtype_calc (np type): (optional) numpy precision to use for calculations
+            useforloop (bool): (optional) whether to use for-loop or not  
+        Returns:
+            fft_binids (arr): indices where fft k-mode lands wrt kvals edges
+        '''
+        
+        fft_binids = np.zeros(self.OTFPowerSpectrumHead.n_fft, dtype=dtype_bin)
+        iter_arr = np.arange(self.OTFPowerSpectrumHead.n_fft, dtype=dtype_calc)
+
+        # grab fft kvalues
+        kvals_fft = self.get_kvals_fft(dtype=dtype_calc)
+
+        # calculation can be completed in-line, but not as easy to read
+        l_kstart = self.OTFPowerSpectrumHead.l_kstart
+        dlogk = self.OTFPowerSpectrumHead.dlogk
+
+        if useforloop:
+            # grab edges for comparison
+            kvals_edges = self.get_kvals_edges(dtype=dtype_calc)
+            for bin_id_fft in range(self.OTFPowerSpectrumHead.n_fft):
+                edge_greater_fft = np.argwhere(kvals_fft[bin_id_fft] < kvals_edges).flatten()
+                # okay to flatten bc we know kvals_fft and kvals_edges are 1D arrays
+                if edge_greater_fft.size > 0 :
+                    # ensure we're indexing into a non-empty array
+                    fft_binids[bin_id_fft] = edge_greater_fft[0] - 1
+        else:
+            fft_binids_float = (np.log10(kvals_fft) - l_kstart) / dlogk
+            fft_binids[:] = np.floor(fft_binids_float)
+
+        return fft_binids
+
 
     def get_powerspectrum(self, dtype=np.float32):
         '''
