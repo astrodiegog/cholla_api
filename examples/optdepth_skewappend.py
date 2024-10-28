@@ -19,6 +19,13 @@ from cholla_api.OTFanalysis.ChollaOnTheFlySkewers import ChollaOnTheFlySkewers
 
 def create_parser():
     '''
+    Create a command line argument parser that grabs the number of nodes
+        and the parameter text file. Allow for verbosity
+
+    Args:
+        ...
+    Returns:
+        ...
     '''
 
     parser = argparse.ArgumentParser(
@@ -34,7 +41,7 @@ def create_parser():
 
     return parser
 
-def init_taucalc(OTFSkewers, nStride):
+def init_taucalc(OTFSkewers, nStride, verbose=False):
     '''
     Initialize the calculation of the effective optical depth. For each skewers_i axis
         group, create three things:
@@ -48,12 +55,15 @@ def init_taucalc(OTFSkewers, nStride):
     Args:
         OTFSkewers (ChollaOnTheFlySkewers): holds OTF skewers specific info
         nStride (int): stride cell number between skewers
+        verbose (bool): (optional) whether to print important information
     Returns:
         ...
 
     '''
 
     with h5py.File(OTFSkewers.OTFSkewersfPath, 'r+') as fObj:
+        if verbose:
+            print(f'\t...initializing optical depth calculations for file {OTFSkewers.OTFSkewersfPath}')
 
         OTFSkewers_lst = [OTFSkewers.get_skewersx_obj(nStride),
                           OTFSkewers.get_skewersy_obj(nStride),
@@ -61,7 +71,8 @@ def init_taucalc(OTFSkewers, nStride):
 
         # add progress attribute, boolean mask for whether tau is calculated, and tau itself
         for i, OTFSkewers_i in enumerate(OTFSkewers_lst):
-            print(f"initializing along axis {i:.0f}")
+            if verbose:
+                print(f"\t\t...initializing arrays and attributes along axis {i:.0f}")
             skew_key = OTFSkewers_i.OTFSkewersiHead.skew_key
 
             taucalc_bool = np.zeros(OTFSkewers_i.OTFSkewersiHead.n_skews, dtype=bool)
@@ -74,17 +85,21 @@ def init_taucalc(OTFSkewers, nStride):
             if 'taucalc_eff' not in fObj[skew_key].keys():
                 fObj[skew_key].create_dataset('taucalc_eff', data=taucalc)
 
-    print("Initialization complete")
+    if verbose:
+        print("...initialization complete !")
+    
     return
 
 
-def taucalc(OTFSkewers_i, skewCosmoCalc, precision=np.float64):
+def taucalc(OTFSkewers_i, skewCosmoCalc, precision=np.float64, verbose=False):
     '''
     Calculate the effective optical depth for each skewer along an axis
 
     Args:
         OTFSkewers_i (ChollaOnTheFlySkewers_i): holds all skewer info along an axis
         skewCosmoCalc (ChollaSkewerCosmoCalculator): holds optical depth function
+        precision (np type): (optional) numpy precision to use
+        verbose (bool): (optional) whether to print important information
     Returns:
         ...
     '''
@@ -94,7 +109,8 @@ def taucalc(OTFSkewers_i, skewCosmoCalc, precision=np.float64):
     with h5py.File(OTFSkewers_i.fPath, 'r+') as fObj:
         curr_progress = fObj[skew_key].attrs['taucalc_prog']
         progress_tenperc = int(curr_progress // 0.1)
-        print(f"Starting calculations at {100 * curr_progress:.2f} % complete")
+        if verbose:
+            print(f"Starting calculations at {100 * curr_progress:.2f} % complete")
 
         # loop over each skewer
         for nSkewerID in range(OTFSkewers_i.OTFSkewersiHead.n_skews):
@@ -115,16 +131,18 @@ def taucalc(OTFSkewers_i, skewCosmoCalc, precision=np.float64):
             fObj[skew_key]['taucalc_bool'][nSkewerID] = True
             fObj[skew_key]['taucalc_eff'][nSkewerID] = tau_eff
 
-            if ((fObj[skew_key].attrs['taucalc_prog'] // 0.1) > progress_tenperc):
+            if ((verbose) and ( (fObj[skew_key].attrs['taucalc_prog'] // 0.1) > progress_tenperc) ):
                 print(f"--- Completed {fObj[skew_key].attrs['taucalc_prog'] * 100 : .0f} % at skewer {nSkewerID:.0f} ---")
                 progress_tenperc += 1
 
-    print("Effective optical depth calculation completed along ", OTFSkewers_i.OTFSkewersiHead.skew_key)
+    if verbose:
+        print("Effective optical depth calculation completed along ", OTFSkewers_i.OTFSkewersiHead.skew_key)
 
     return
 
 def main():
     '''
+    Append the array of median optical depths for each skewer file
     '''
 
     # Create parser
@@ -213,7 +231,7 @@ def main():
         snapHead.a = OTFSkewers.current_a
         skewCosmoCalc = ChollaSkewerCosmoCalculator(snapHead, chCosmoHead, nlos, dx, precision)
 
-        init_taucalc(OTFSkewers, int(params['lya_skewers_stride']))
+        init_taucalc(OTFSkewers, int(params['lya_skewers_stride']), args.verbose)
         
         OTFSkewers_lst = [OTFSkewers.get_skewersx_obj(int(params['lya_skewers_stride'])),
                           OTFSkewers.get_skewersy_obj(int(params['lya_skewers_stride'])),
@@ -222,9 +240,10 @@ def main():
 
         # add progress attribute, boolean mask for whether tau is calculated, and tau itself
         for i, OTFSkewers_i in enumerate(OTFSkewers_lst):
-            print(f"Starting calculation along axis {i:.0f}")
+            if args.verbose:
+                print(f"Starting calculation along axis {i:.0f}")
 
-            taucalc(OTFSkewers_i, skewCosmoCalc, precision)
+            taucalc(OTFSkewers_i, skewCosmoCalc, precision, args.verbose)
 
 
 
