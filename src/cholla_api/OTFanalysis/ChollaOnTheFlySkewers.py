@@ -195,6 +195,20 @@ class ChollaOnTheFlySkewers_i:
         self.allkeys = {self.HI_str, self.HeII_str, self.density_str,
                         self.vel_str, self.temp_str}
 
+    def get_nSkewerOutput(self):
+        '''
+        From the file path, grab the number of the skewer output since we know
+            path has form "/dir1/dir2/dir3/X_skewers.h5" where X is the Skewer
+            Output
+
+        Args:
+            ...
+        Returns:
+            ...
+        '''
+        fName = self.fPath.split('/')[-1]
+        return fName.split('_')[0]
+
     def check_datakey(self, data_key):
         '''
         Check if a requested data key is valid to be accessed in skewers file
@@ -336,20 +350,15 @@ class ChollaOnTheFlySkewers:
     Values are returned in code units unless otherwise specified.
     '''
 
-    def __init__(self, nSkewer, SkewersPath, ChollaGrid):
+    def __init__(self, nSkewer, SkewersPath):
         self.OTFSkewersfPath = SkewersPath + '/' + str(nSkewer) + '_skewers.h5'
 
-        # current implementation only works for cube grid
-        assert ChollaGrid.nx_global == ChollaGrid.ny_global
-        assert ChollaGrid.nx_global == ChollaGrid.nz_global
-        assert ChollaGrid.Lx == ChollaGrid.Ly
-        assert ChollaGrid.Lx == ChollaGrid.Lz
+        self.xskew_str = "skewers_x"
+        self.yskew_str = "skewers_y"
+        self.zskew_str = "skewers_z"
 
-        self.nx = ChollaGrid.nx_global
-        self.ny = ChollaGrid.ny_global
-        self.nz = ChollaGrid.nz_global
-
-        dx = ChollaGrid.dx / 1e3 # convert kpc --> Mpc
+        # set grid information (ncells, dist between cells, nstride)
+        self.set_gridinfo()
 
         # set cosmology params
         self.set_cosmoinfo()
@@ -357,14 +366,58 @@ class ChollaOnTheFlySkewers:
         # grab current hubble param & info needed to calculate hubble flow
         H = self.get_currH()
         cosmoh = self.H0 / 100.
-        dxproper = dx * self.current_a / cosmoh
 
-        # calculate hubble flow through a cell
-        self.dvHubble = H * dxproper
+        # calculate proper distance along each direction
+        dxproper = self.dx * self.current_a / cosmoh
+        dyproper = self.dy * self.current_a / cosmoh
+        dzproper = self.dz * self.current_a / cosmoh
 
-        self.xskew_str = "skewers_x"
-        self.yskew_str = "skewers_y"
-        self.zskew_str = "skewers_z"
+        # calculate hubble flow through a cell along each axis
+        self.dvHubble_x = H * dxproper
+        self.dvHubble_y = H * dyproper
+        self.dvHubble_z = H * dzproper
+
+
+    def set_gridinfo(self, datalength_str='density'):
+        '''
+        Set grid information by looking at attribute of file object and shape of 
+            data sets
+        
+        Args:
+            - datalength_str (str): (optional) key to dataset used to find the
+                number of skewers and cells along an axis
+        Returns:
+            ...
+        '''
+
+        fObj = h5py.File(self.OTFSkewersfPath, 'r')
+
+        # grab length of box in units of [kpc]
+        Lx, Ly, Lz = np.array(fObj.attrs['Lbox'])
+
+        # set number of skewers and stride number along each direction 
+        nskewersx, self.nx = fObj[self.xskew_str][datalength_str].shape
+        nskewersy, self.ny = fObj[self.yskew_str][datalength_str].shape
+        nskewersz, self.nz = fObj[self.zskew_str][datalength_str].shape
+
+        fObj.close()
+
+        # we know nskewers_i = (nj * nk) / (nstride_i * nstride_i)
+        # so nstride_i = sqrt( (nj * nk) / (nskewers_i) )
+        self.nstride_x = int(np.sqrt( (self.ny * self.nz)/(nskewersx) ))
+        self.nstride_y = int(np.sqrt( (self.nz * self.nx)/(nskewersy) ))
+        self.nstride_z = int(np.sqrt( (self.nx * self.ny)/(nskewersz) ))
+
+        # save cell distance in each direction to later calculate hubble flow
+        self.dx = Lx / self.nx
+        self.dy = Ly / self.ny
+        self.dz = Lz / self.nz
+
+        # convert kpc --> Mpc
+        self.dx /= 1.e3
+        self.dy /= 1.e3
+        self.dz /= 1.e3
+
 
     def set_cosmoinfo(self):
         '''
@@ -413,53 +466,53 @@ class ChollaOnTheFlySkewers:
 
         return self.H0 * np.sqrt(H0_factor)
 
-    def get_skewersx_obj(self, nstride):
+    def get_skewersx_obj(self):
         '''
         Return ChollaOnTheFlySkewers_i object of the x-skewers
 
         Args:
-            - n_stride (int): stride cell number between skewers along x-dim
+            ...
         Return:
             OTFSkewerx (ChollaOnTheFlySkewers_i): skewer object
         '''
 
         OTFSkewersxHead = ChollaOnTheFlySkewers_iHead(self.nx, self.ny, self.nz,
-                                                      nstride, self.xskew_str)
+                                                      self.nstride_x, self.xskew_str)
 
         OTFSkewerx = ChollaOnTheFlySkewers_i(OTFSkewersxHead, self.OTFSkewersfPath)
 
         return OTFSkewerx
 
 
-    def get_skewersy_obj(self, nstride):
+    def get_skewersy_obj(self):
         '''
         Return ChollaOnTheFlySkewers_i object of the y-skewers
 
         Args:
-            - n_stride (int): stride cell number between skewers along y-dim
+            ...
         Return:
             OTFSkewery (ChollaOnTheFlySkewers_i): skewer object
         '''
 
         OTFSkewersyHead = ChollaOnTheFlySkewers_iHead(self.ny, self.nx, self.nz,
-                                                      nstride, self.yskew_str)
+                                                      self.nstride_y, self.yskew_str)
 
         OTFSkewery = ChollaOnTheFlySkewers_i(OTFSkewersyHead, self.OTFSkewersfPath)
 
         return OTFSkewery
 
-    def get_skewersz_obj(self, nstride):
+    def get_skewersz_obj(self):
         '''
         Return ChollaOnTheFlySkewers_i object of the z-skewers
 
         Args:
-            - n_stride (int): stride cell number between skewers along y-dim
+            ...
         Return:
             OTFSkewerz (ChollaOnTheFlySkewers_i): skewer object
         '''
 
-        OTFSkewerszHead = ChollaOnTheFlySkewers_iHead(self.ny, self.nx, self.nz,
-                                                      nstride, self.zskew_str)
+        OTFSkewerszHead = ChollaOnTheFlySkewers_iHead(self.nz, self.nx, self.ny,
+                                                      self.nstride_z, self.zskew_str)
 
         OTFSkewerz = ChollaOnTheFlySkewers_i(OTFSkewerszHead, self.OTFSkewersfPath)
 
