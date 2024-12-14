@@ -30,7 +30,6 @@ class ChollaCosmologyHead:
 
         self.G_cgs = 6.67259e-8 # gravitational constant in cgs [cm3 g-1 s-2]
         self.G_cosmo = self.G_cgs / self.km_cgs / self.km_cgs / self.kpc_cgs * self.Msun_cgs # gravitational constant in cosmological units [kpc (km2 s-2) Msun-1]
-
         self.kpc3_cgs = self.kpc_cgs * self.kpc_cgs * self.kpc_cgs
         self.Mpc3_cgs = self.Mpc_cgs * self.Mpc_cgs * self.Mpc_cgs
 
@@ -70,7 +69,6 @@ class ChollaCosmologyHead:
         self.phi0_gas = self.v0_gas * self.v0_gas  # energy units
         self.e0_gas = self.v0_gas * self.v0_gas
         self.p0_gas = self.rho0_gas * self.v0_gas * self.v0_gas # pressure units
-
 
         # conversion factors between cosmo [kpc/km Msun kyr] and cgs [cm gram sec] units
         # these factors DO NOT account for comoving units (ie, scale factor not incorporated)
@@ -153,8 +151,6 @@ class ChollaSnapCosmologyHead:
         return self.Hubble() * dxh_Mpc_phys
 
 
-
-
 class ChollaCosmoCalculator:
     '''
     Cholla Cosmological Calculator object
@@ -223,7 +219,6 @@ class ChollaCosmoCalculator:
 
         return arr
 
-
     def density_cosmo2cgs(self, density_cosmo):
         '''
         Convert the density saved in cosmological units of [h2 Msun kpc-3]
@@ -258,7 +253,6 @@ class ChollaCosmoCalculator:
         arr[:] = np.exp(ln_density_cgs) # [g cm-3]
 
         return arr
-
 
     def velocity_cosmo2cgs(self, velocity_cosmo):
         '''
