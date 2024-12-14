@@ -210,17 +210,15 @@ def main():
     # create ChollaOTFSkewers object
     OTFSkewers = ChollaOnTheFlySkewers(nSkewerOutput, skewersdir)
 
-    # create cosmology header
+    # add progress attribute, boolean mask for whether tau is calculated, and tau itself
+    init_taucalc(OTFSkewers, args.verbose, args.local)
+
+    # create cosmology and snapshot header
     chCosmoHead = ChollaCosmologyHead(OTFSkewers.Omega_M, OTFSkewers.Omega_R, 
                                       OTFSkewers.Omega_K, OTFSkewers.Omega_L,
                                       OTFSkewers.w0, OTFSkewers.wa, OTFSkewers.H0)
-
-    # create skew cosmo calc object
     snapHead = ChollaSnapHead(nSkewerOutput + 1) # snapshots are index-1
     snapHead.a = OTFSkewers.current_a
-
-    # add progress attribute, boolean mask for whether tau is calculated, and tau itself
-    init_taucalc(OTFSkewers, args.verbose, args.local)
         
     OTFSkewers_lst = [OTFSkewers.get_skewersx_obj(), OTFSkewers.get_skewersy_obj(),
                       OTFSkewers.get_skewersz_obj()]
