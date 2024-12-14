@@ -155,7 +155,6 @@ class ChollaOnTheFlySkewers_iHead:
         - n_k (int): lenth of second dimension spanning cube
         - n_stride (int): stride cell number between skewers
         - skew_key (str): string to access skewer
-
     '''
     def __init__(self, n_i, n_j, n_k, n_stride, skew_key):
         self.n_i = n_i
@@ -166,6 +165,7 @@ class ChollaOnTheFlySkewers_iHead:
 
         # number of skewers, assumes nstride is same along both j and k dims
         self.n_skews = int( (self.n_j * self.n_k) / (self.n_stride * self.n_stride) )
+
 
 class ChollaOnTheFlySkewers_i:
     '''
@@ -359,6 +359,9 @@ class ChollaOnTheFlySkewers:
 
         # set grid information (ncells, dist between cells, nstride)
         self.set_gridinfo()
+        dx_Mpc = self.dx / 1.e3 # [Mpc]
+        dy_Mpc = self.dy / 1.e3
+        dz_Mpc = self.dz / 1.e3
 
         # set cosmology params
         self.set_cosmoinfo()
@@ -368,15 +371,14 @@ class ChollaOnTheFlySkewers:
         cosmoh = self.H0 / 100.
 
         # calculate proper distance along each direction
-        dxproper = self.dx * self.current_a / cosmoh
-        dyproper = self.dy * self.current_a / cosmoh
-        dzproper = self.dz * self.current_a / cosmoh
+        dxproper = dx_Mpc * self.current_a / cosmoh # [h-1 Mpc]
+        dyproper = dy_Mpc * self.current_a / cosmoh
+        dzproper = dz_Mpc * self.current_a / cosmoh
 
         # calculate hubble flow through a cell along each axis
-        self.dvHubble_x = H * dxproper
+        self.dvHubble_x = H * dxproper # [km s-1]
         self.dvHubble_y = H * dyproper
         self.dvHubble_z = H * dzproper
-
 
     def set_gridinfo(self, datalength_str='density'):
         '''
@@ -409,15 +411,9 @@ class ChollaOnTheFlySkewers:
         self.nstride_z = int(np.sqrt( (self.nx * self.ny)/(nskewersz) ))
 
         # save cell distance in each direction to later calculate hubble flow
-        self.dx = Lx / self.nx
+        self.dx = Lx / self.nx # [kpc]
         self.dy = Ly / self.ny
         self.dz = Lz / self.nz
-
-        # convert kpc --> Mpc
-        self.dx /= 1.e3
-        self.dy /= 1.e3
-        self.dz /= 1.e3
-
 
     def set_cosmoinfo(self):
         '''
@@ -482,7 +478,6 @@ class ChollaOnTheFlySkewers:
         OTFSkewerx = ChollaOnTheFlySkewers_i(OTFSkewersxHead, self.OTFSkewersfPath)
 
         return OTFSkewerx
-
 
     def get_skewersy_obj(self):
         '''
