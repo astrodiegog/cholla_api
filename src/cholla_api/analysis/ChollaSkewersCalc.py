@@ -130,18 +130,25 @@ class ChollaSkewerCosmoCalculator:
                 # [cm3 * # density] = [cm3 * cm-3] = []
                 tau_ghost[losid] = sigma_Lya * np.sum(nHI_phys_ghost_cgs * (erf(y_R) - erf(y_L))) / 2.0
         else:        
-            # NEW IMPLEMENTATION w/o for-loop
-            vHL_repeat = np.repeat(self.vHubbleL_ghost_cgs, self.n_los_ghost).reshape((self.n_los_ghost, self.n_los_ghost))
-            vHR_repeat = np.repeat(self.vHubbleR_ghost_cgs, self.n_los_ghost).reshape((self.n_los_ghost, self.n_los_ghost))
-        
-            density_repeat = np.repeat(nHI_phys_ghost_cgs, self.n_los_ghost).reshape((self.n_los_ghost, self.n_los_ghost)).T
-            vel_repeat = np.repeat(velocity_phys_ghost_cgs, self.n_los_ghost).reshape((self.n_los_ghost, self.n_los_ghost)).T
-            doppler_repeat = np.repeat(doppler_param_ghost_cgs, self.n_los_ghost).reshape((self.n_los_ghost, self.n_los_ghost)).T
-        
-            yL_all = (vHL_repeat - vel_repeat) / doppler_repeat
-            yR_all = (vHR_repeat - vel_repeat) / doppler_repeat
+            # NEW IMPLEMENTATION -- dynamic scaling of 5 sigs
+            five_sigs = (5./np.sqrt(2.)) * (doppler_param_ghost_cgs)
+            
+            vHC_fivesig_upp_all = self.vHubbleC_ghost_cgs + five_sigs
+            vHC_fivesig_low_all = self.vHubbleC_ghost_cgs - five_sigs
 
-            tau_ghost[:] = sigma_Lya * np.sum(density_repeat * (erf(yR_all) - erf(yL_all)), axis=1) / 2.0
+            for losid in range(self.n_los_ghost):
+                vH_L, vH_R = self.vHubbleL_ghost_cgs[losid], self.vHubbleR_ghost_cgs[losid]
+                # evaluate the five-sig mask here
+                vHC_fivesig_upp = vHC_fivesig_upp_all[losid]
+                vHC_fivesig_low = vHC_fivesig_low_all[losid]
+                fivesig_mask = (velocity_phys_ghost_cgs < vHC_fivesig_upp) & (velocity_phys_ghost_cgs > vHC_fivesig_low)
+                vel_fivesig = velocity_phys_ghost_cgs[fivesig_mask]
+                doppler_fivesig = doppler_param_ghost_cgs[fivesig_mask]
+                nHI_fivesig = nHI_phys_ghost_cgs[fivesig_mask]
+                # calculate line center shift in terms of broadening scale
+                y_L = (vH_L - vel_fivesig) / doppler_fivesig
+                y_R = (vH_R - vel_fivesig) / doppler_fivesig
+                tau_ghost[losid] = (sigma_Lya / 2.0) * np.sum(nHI_fivesig * (erf(y_R) - erf(y_L)))
 
 
         # clip edges
