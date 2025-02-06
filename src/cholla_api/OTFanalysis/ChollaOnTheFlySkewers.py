@@ -211,7 +211,7 @@ class ChollaOnTheFlySkewers_i:
 
         self.set_keys()                 # set possible skewer keys
 
-     def set_keys(self):
+    def set_keys(self):
         '''
         Check skewer group to set the available keys
 
