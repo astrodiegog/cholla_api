@@ -94,13 +94,13 @@ class ChollaSnapCosmologyHead:
             with a specific scale factor with the snapshot header object.
         
         Initialized with:
-            snapHead (ChollaSnapHead): provides current redshift
+            scale_factor (float): scale factor
             cosmoHead (ChollaCosmologyHead): provides helpful information of cosmology & units
 
     Values are returned in code units unless otherwise specified.
     '''
-    def __init__(self, snapHead, cosmoHead):
-        self.a = snapHead.a
+    def __init__(self, scale_factor, cosmoHead):
+        self.a = scale_factor
         self.cosmoHead = cosmoHead
 
         # calculate & attach current Hubble rate in [km s-1 Mpc-1] and [s-1]
