@@ -1,6 +1,6 @@
 import numpy as np
 import h5py
-
+from pathlib import Path
 
 class ChollaOnTheFlySkewerHead:
     '''
@@ -30,23 +30,41 @@ class ChollaOnTheFlySkewer:
         Initialized with:
         - ChollaOTFSkewerHead (ChollaOnTheFlySkewerHead): header
             information associated with skewer
-        - fPath (str): file path to skewers output
+        - fPath (PosixPath): file path to skewers output
 
     Values are returned in code units unless otherwise specified.
     '''
 
     def __init__(self, ChollaOTFSkewerHead, fPath):
         self.OTFSkewerHead = ChollaOTFSkewerHead
-        self.fPath = fPath
+        self.fPath = fPath.resolve()    # convert to absolute path
+        assert self.fPath.is_file()     # make sure file exists
 
-        self.HI_str = 'HI_density'
-        self.HeII_str = 'HeII_density'
-        self.density_str = 'density'
-        self.vel_str = 'los_velocity'
-        self.temp_str = 'temperature'
+        self.set_keys()                 # set possible skewer keys
 
-        self.allkeys = {self.HI_str, self.HeII_str, self.density_str,
-                        self.vel_str, self.temp_str}
+    def set_keys(self):
+        '''
+        Check skewer group to set the available keys
+
+        Args:
+            ...
+        Returns:
+            ...
+        '''
+
+        keys_1D, keys_2D = [], []
+        with h5py.File(self.fPath, 'r') as fObj:
+            self.allkeys = set(fObj[self.OTFSkewersiHead.skew_key].keys())
+            for key in self.allkeys:
+                if fObj[self.OTFSkewersiHead.skew_key].get(key).ndim == 1:
+                    keys_1D.append(key)
+                if fObj[self.OTFSkewersiHead.skew_key].get(key).ndim == 2:
+                    keys_2D.append(key)
+
+        self.keys_1D = set(keys_1D)
+        self.keys_2D = set(keys_2D)
+
+        return
 
     def check_datakey(self, data_key):
         '''
@@ -74,9 +92,8 @@ class ChollaOnTheFlySkewer:
         assert self.check_datakey(key)
 
         arr = np.zeros(self.OTFSkewerHead.n_i, dtype=dtype)
-        fObj = h5py.File(self.fPath, 'r')
-        arr[:] = fObj[self.OTFSkewerHead.skew_key].get(key)[self.OTFSkewerHead.skew_id, :]
-        fObj.close()
+        with h5py.File(self.fPath, 'r') as fObj:
+            arr[:] = fObj[self.OTFSkewerHead.skew_key].get(key)[self.OTFSkewerHead.skew_id, :]
 
         return arr
 
@@ -89,8 +106,9 @@ class ChollaOnTheFlySkewer:
         Returns:
             arr (arr): density
         '''
+        density_str = 'density'
 
-        return self.get_skewerdata(self.density_str, dtype=dtype)
+        return self.get_skewerdata(density_str, dtype=dtype)
 
     def get_HIdensity(self, dtype=np.float32):
         '''
@@ -101,8 +119,9 @@ class ChollaOnTheFlySkewer:
         Returns:
             arr (arr): HI density
         '''
+        HI_str = 'HI_density'
 
-        return self.get_skewerdata(self.HI_str, dtype=dtype)
+        return self.get_skewerdata(HI_str, dtype=dtype)
 
     def get_HeIIdensity(self, dtype=np.float32):
         '''
@@ -113,8 +132,9 @@ class ChollaOnTheFlySkewer:
         Returns:
             arr (arr): HeII density
         '''
+        HeII_str = 'HeII_density'
 
-        return self.get_skewerdata(self.HeII_str, dtype=dtype)
+        return self.get_skewerdata(HeII_str, dtype=dtype)
 
     def get_losvelocity(self, dtype=np.float32):
         '''
@@ -125,8 +145,9 @@ class ChollaOnTheFlySkewer:
         Returns:
             arr (arr): line-of-sight velocity
         '''
+        vel_str = 'los_velocity'
 
-        return self.get_skewerdata(self.vel_str, dtype=dtype)
+        return self.get_skewerdata(vel_str, dtype=dtype)
 
     def get_temperature(self, dtype=np.float32):
         '''
@@ -137,8 +158,9 @@ class ChollaOnTheFlySkewer:
         Returns:
             arr (arr): temperature
         '''
+        temp_str = 'temperature'
 
-        return self.get_skewerdata(self.temp_str, dtype=dtype)
+        return self.get_skewerdata(temp_str, dtype=dtype)
 
 
 
@@ -177,37 +199,41 @@ class ChollaOnTheFlySkewers_i:
         Initialized with:
         - ChollaOTFSkewersiHead (ChollaOnTheFlySkewers_iHead): header
             information associated with skewer
-        - fPath (str): file path to skewers output
+        - fPath (PosixPath): file path to skewers output
 
     Values are returned in code units unless otherwise specified.
     '''
 
     def __init__(self, ChollaOTFSkewersiHead, fPath):
         self.OTFSkewersiHead = ChollaOTFSkewersiHead
-        self.fPath = fPath
+        self.fPath = fPath.resolve()    # convert to absolute path
+        assert self.fPath.is_file()     # make sure file exists
 
-        self.HI_str = 'HI_density'
-        self.HeII_str = 'HeII_density'
-        self.density_str = 'density'
-        self.vel_str = 'los_velocity'
-        self.temp_str = 'temperature'
+        self.set_keys()                 # set possible skewer keys
 
-        self.allkeys = {self.HI_str, self.HeII_str, self.density_str,
-                        self.vel_str, self.temp_str}
-
-    def get_nSkewerOutput(self):
+     def set_keys(self):
         '''
-        From the file path, grab the number of the skewer output since we know
-            path has form "/dir1/dir2/dir3/X_skewers.h5" where X is the Skewer
-            Output
+        Check skewer group to set the available keys
 
         Args:
             ...
         Returns:
             ...
         '''
-        fName = self.fPath.split('/')[-1]
-        return fName.split('_')[0]
+
+        keys_1D, keys_2D = [], []
+        with h5py.File(self.fPath, 'r') as fObj:
+            self.allkeys = set(fObj[self.OTFSkewersiHead.skew_key].keys())
+            for key in self.allkeys:
+                if fObj[self.OTFSkewersiHead.skew_key].get(key).ndim == 1:
+                    keys_1D.append(key)
+                if fObj[self.OTFSkewersiHead.skew_key].get(key).ndim == 2:
+                    keys_2D.append(key)
+
+        self.keys_1D = set(keys_1D)
+        self.keys_2D = set(keys_2D)
+
+        return
 
     def check_datakey(self, data_key):
         '''
@@ -237,10 +263,14 @@ class ChollaOnTheFlySkewers_i:
 
         assert self.check_datakey(key)
 
-        arr = np.zeros((self.OTFSkewersiHead.n_skews, self.OTFSkewersiHead.n_i), dtype=dtype)
-        fObj = h5py.File(self.fPath, 'r')
-        arr[:,:] = fObj[self.OTFSkewersiHead.skew_key].get(key)[:, :]
-        fObj.close()
+        if key in self.keys_1D:
+            arr = np.zeros((self.OTFSkewersiHead.n_skews), dtype=dtype)
+            with h5py.File(self.fPath, 'r') as fObj:
+                arr[:] = fObj[self.OTFSkewersiHead.skew_key].get(key)[:]
+        elif key in self.keys_2D:
+            arr = np.zeros((self.OTFSkewersiHead.n_skews, self.OTFSkewersiHead.n_i), dtype=dtype)
+            with h5py.File(self.fPath, 'r') as fObj:
+                arr[:,:] = fObj[self.OTFSkewersiHead.skew_key].get(key)[:, :]
 
         return arr
 
@@ -253,8 +283,9 @@ class ChollaOnTheFlySkewers_i:
         Returns:
             arr (arr): density
         '''
+        density_str = 'density'
 
-        return self.get_skeweralldata(self.density_str, dtype=dtype)
+        return self.get_skeweralldata(density_str, dtype=dtype)
 
     def get_allHIdensity(self, dtype=np.float32):
         '''
@@ -265,8 +296,9 @@ class ChollaOnTheFlySkewers_i:
         Returns:
             arr (arr): HI density
         '''
+        HI_str = 'HI_density'
 
-        return self.get_skeweralldata(self.HI_str, dtype=dtype)
+        return self.get_skeweralldata(HI_str, dtype=dtype)
 
     def get_allHeIIdensity(self, dtype=np.float32):
         '''
@@ -277,8 +309,9 @@ class ChollaOnTheFlySkewers_i:
         Returns:
             arr (arr): phase space
         '''
+        HeII_str = 'HeII_density'
 
-        return self.get_skeweralldata(self.HeII_str, dtype=dtype)
+        return self.get_skeweralldata(HeII_str, dtype=dtype)
 
     def get_alllosvelocity(self, dtype=np.float32):
         '''
@@ -289,8 +322,9 @@ class ChollaOnTheFlySkewers_i:
         Returns:
             arr (arr): line-of-sight velocity
         '''
+        vel_str = 'los_velocity'
 
-        return self.get_skeweralldata(self.vel_str, dtype=dtype)
+        return self.get_skeweralldata(vel_str, dtype=dtype)
 
     def get_alltemperature(self, dtype=np.float32):
         '''
@@ -301,8 +335,9 @@ class ChollaOnTheFlySkewers_i:
         Returns:
             arr (arr): temperature
         '''
+        temp_str = 'temperature'
 
-        return self.get_skeweralldata(self.temp_str, dtype=dtype)
+        return self.get_skeweralldata(temp_str, dtype=dtype)
 
     def get_skewer_obj(self, skewid):
         '''
@@ -343,15 +378,14 @@ class ChollaOnTheFlySkewers:
             access data for that output
 
         Initialized with:
-        - nSkewer (nSkewer): number of the skewer output
-        - SkewersPath (str): directory path to skewer output files
-        - ChollaGrid (ChollaGrid): grid holding domain information
+        - fPath (PosixPath): file path to skewers output
 
     Values are returned in code units unless otherwise specified.
     '''
 
     def __init__(self, nSkewer, SkewersPath):
-        self.OTFSkewersfPath = SkewersPath + '/' + str(nSkewer) + '_skewers.h5'
+        self.OTFSkewersfPath = fPath.resolve() # convert to absolute path
+        assert self.OTFSkewersfPath.is_file() # make sure file exists
 
         self.xskew_str = "skewers_x"
         self.yskew_str = "skewers_y"
@@ -392,23 +426,21 @@ class ChollaOnTheFlySkewers:
             ...
         '''
 
-        fObj = h5py.File(self.OTFSkewersfPath, 'r')
+        with h5py.File(self.OTFSkewersfPath, 'r') as fObj:
+            # grab length of box in units of [kpc]
+            Lx, Ly, Lz = np.array(fObj.attrs['Lbox'])
 
-        # grab length of box in units of [kpc]
-        Lx, Ly, Lz = np.array(fObj.attrs['Lbox'])
+            # set number of skewers and stride number along each direction 
+            self.nskewersx, self.nx = fObj[self.xskew_str][datalength_str].shape
+            self.nskewersy, self.ny = fObj[self.yskew_str][datalength_str].shape
+            self.nskewersz, self.nz = fObj[self.zskew_str][datalength_str].shape
 
-        # set number of skewers and stride number along each direction 
-        nskewersx, self.nx = fObj[self.xskew_str][datalength_str].shape
-        nskewersy, self.ny = fObj[self.yskew_str][datalength_str].shape
-        nskewersz, self.nz = fObj[self.zskew_str][datalength_str].shape
-
-        fObj.close()
 
         # we know nskewers_i = (nj * nk) / (nstride_i * nstride_i)
         # so nstride_i = sqrt( (nj * nk) / (nskewers_i) )
-        self.nstride_x = int(np.sqrt( (self.ny * self.nz)/(nskewersx) ))
-        self.nstride_y = int(np.sqrt( (self.nz * self.nx)/(nskewersy) ))
-        self.nstride_z = int(np.sqrt( (self.nx * self.ny)/(nskewersz) ))
+        self.nstride_x = int(np.sqrt( (self.ny * self.nz)/(self.nskewersx) ))
+        self.nstride_y = int(np.sqrt( (self.nz * self.nx)/(self.nskewersy) ))
+        self.nstride_z = int(np.sqrt( (self.nx * self.ny)/(self.nskewersz) ))
 
         # save cell distance in each direction to later calculate hubble flow
         self.dx = Lx / self.nx # [kpc]
@@ -425,21 +457,20 @@ class ChollaOnTheFlySkewers:
             ...
         '''
 
-        fObj = h5py.File(self.OTFSkewersfPath, 'r')
+        with h5py.File(self.OTFSkewersfPath, 'r') as fObj:
+            self.Omega_R = fObj.attrs['Omega_R'].item()
+            self.Omega_M = fObj.attrs['Omega_M'].item()
+            self.Omega_L = fObj.attrs['Omega_L'].item()
+            self.Omega_K = fObj.attrs['Omega_K'].item()
 
-        self.Omega_R = fObj.attrs['Omega_R'].item()
-        self.Omega_M = fObj.attrs['Omega_M'].item()
-        self.Omega_L = fObj.attrs['Omega_L'].item()
-        self.Omega_K = fObj.attrs['Omega_K'].item()
+            self.w0 = fObj.attrs['w0'].item()
+            self.wa = fObj.attrs['wa'].item()
 
-        self.w0 = fObj.attrs['w0'].item()
-        self.wa = fObj.attrs['wa'].item()
+            self.H0 = fObj.attrs['H0'].item() # expected in km/s/Mpc
+            self.current_a = fObj.attrs['current_a'].item()
+            self.current_z = fObj.attrs['current_z'].item()
 
-        self.H0 = fObj.attrs['H0'].item() # expected in km/s/Mpc
-        self.current_a = fObj.attrs['current_a'].item()
-        self.current_z = fObj.attrs['current_z'].item()
-
-        fObj.close()
+        return
 
     def get_currH(self):
         '''
