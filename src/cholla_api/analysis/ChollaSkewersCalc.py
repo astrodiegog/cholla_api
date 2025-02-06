@@ -76,7 +76,7 @@ class ChollaSkewerCosmoCalculator:
         return arr_ghost
 
 
-    def optical_depth_Hydrogen(self, densityHI, velocity_pec, temp, use_forloop=True):
+    def optical_depth_Hydrogen(self, densityHI, velocity_pec, temp, num_sigs=0):
         '''
         Compute the optical depth for each cell along the line-of-sight
 
@@ -84,6 +84,7 @@ class ChollaSkewerCosmoCalculator:
             densityHI (arr): ionized Hydrogen comoving density [h2 Msun kpc-3]
             velocity_pec (arr): peculiar velocity [km s-1]
             temp (arr): temperature [K]
+            num_sigs (int): (optional) number of standard deviations to around mean
         Returns:
             tau (arr): optical depth for each cell
         '''
@@ -120,7 +121,7 @@ class ChollaSkewerCosmoCalculator:
         tau_ghost = self.snapCosmoCalc_ghost.create_arr()
         
 
-        if use_forloop:
+        if num_sigs == 0:
             # OLD IMPLEMENTATION
             for losid in range(self.n_los_ghost):
                 vH_L, vH_R = self.vHubbleL_ghost_cgs[losid], self.vHubbleR_ghost_cgs[losid]
@@ -131,7 +132,7 @@ class ChollaSkewerCosmoCalculator:
                 tau_ghost[losid] = sigma_Lya * np.sum(nHI_phys_ghost_cgs * (erf(y_R) - erf(y_L))) / 2.0
         else:        
             # NEW IMPLEMENTATION -- dynamic scaling of 5 sigs
-            five_sigs = (5./np.sqrt(2.)) * (doppler_param_ghost_cgs)
+            five_sigs = (num_sigs) * (doppler_param_ghost_cgs)
             
             vHC_fivesig_upp_all = self.vHubbleC_ghost_cgs + five_sigs
             vHC_fivesig_low_all = self.vHubbleC_ghost_cgs - five_sigs
