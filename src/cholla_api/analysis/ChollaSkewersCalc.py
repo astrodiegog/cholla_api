@@ -12,7 +12,7 @@ class ChollaSkewerCosmoCalculator:
             for a skewer.
 
         Initialized with:
-            snapHead (ChollaSnapHead): provides current redshift
+            scale_factor (float): scale factor
             cosmoHead (ChollaCosmologyHead): provides helpful information of cosmology & units
             n_los (int): number of cells along line-of-sight
             dx (float): comoving distance between cells (kpc)
@@ -22,16 +22,17 @@ class ChollaSkewerCosmoCalculator:
 
     Values are returned in code units unless otherwise specified.
     '''
-    def __init__(self, snapHead, cosmoHead, n_los, dx, dtype=np.float32):
+    def __init__(self, scale_factor, cosmoHead, n_los, dx, dtype=np.float32):
         self.n_los = n_los
         self.n_ghost = int(0.1 * n_los) # take 10% from bruno
         self.dx = dx
+        self.a = scale_factor
 
         # number of line-of-sight cells including ghost cells
         self.n_los_ghost = self.n_los + 2 * self.n_ghost
 
         # create ChollaCosmoCalc object
-        self.snapCosmoHead = ChollaSnapCosmologyHead(snapHead, cosmoHead)
+        self.snapCosmoHead = ChollaSnapCosmologyHead(self.a, cosmoHead)
         calc_dims, calc_dims_ghost = (self.n_los,), (self.n_los_ghost,)
         self.snapCosmoCalc = ChollaCosmoCalculator(self.snapCosmoHead, calc_dims, dtype=dtype)
         self.snapCosmoCalc_ghost = ChollaCosmoCalculator(self.snapCosmoHead, calc_dims_ghost, dtype=dtype)
