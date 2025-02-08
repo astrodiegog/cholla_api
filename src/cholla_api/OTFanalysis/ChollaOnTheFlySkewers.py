@@ -383,7 +383,7 @@ class ChollaOnTheFlySkewers:
     Values are returned in code units unless otherwise specified.
     '''
 
-    def __init__(self, nSkewer, SkewersPath):
+    def __init__(self, fPath):
         self.OTFSkewersfPath = fPath.resolve() # convert to absolute path
         assert self.OTFSkewersfPath.is_file() # make sure file exists
 
