@@ -106,14 +106,14 @@ class ChollaFluxPowerSpectrumHead:
         '''
 
         l_kstart = np.log10(0.99) + self.l_kmin
-        n_bins = int(1 + ( (self.l_kmax - self.l_kstart) / dlogk ) )
+        n_bins = int(1 + ( (self.l_kmax - l_kstart) / dlogk ) )
 
         # grab fft kvalues
         kvals_fft = self.get_kvals_fft(dtype=precision)
 
         # find the indices that describe where the k-mode FFT bins fall within kval_edges (from dlogk)
         fft_binids = np.zeros(self.n_fft, dtype=dtype_bin)
-        fft_binids_float = (np.log10(kvals_fft) - self.l_kstart) / self.dlogk
+        fft_binids_float = (np.log10(kvals_fft) - l_kstart) / dlogk
         fft_binids[:] = np.floor(fft_binids_float)
 
         # count the number of fft modes that fall within each dlogk bin id
@@ -126,5 +126,5 @@ class ChollaFluxPowerSpectrumHead:
         iter_arr = np.arange(n_bins + 1, dtype=precision)
         kedges[:] = 10**(l_kstart + (dlogk * iter_arr) )
 
-        return kedges, kedges_nfft_bins
+        return kedges, fft_binids
 
